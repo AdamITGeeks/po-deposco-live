@@ -1,328 +1,319 @@
-import { useEffect } from "react";
-import { useFetcher } from "@remix-run/react";
 import {
-  Page,
-  Layout,
+  IndexTable,
+  LegacyCard,
+  IndexFilters,
+  useSetIndexFiltersMode,
   Text,
-  Card,
-  Button,
-  BlockStack,
+  Badge,
+  useBreakpoints,
   Box,
-  List,
-  Link,
+  Button,
+  Page,
+  Spinner,
+  Icon,
   InlineStack,
+  EmptyState,
+  BlockStack,
 } from "@shopify/polaris";
-import { TitleBar, useAppBridge } from "@shopify/app-bridge-react";
-import { authenticate } from "../shopify.server";
+import { OrderIcon } from "@shopify/polaris-icons";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-export const loader = async ({ request }) => {
-  await authenticate.admin(request);
-
-  return null;
-};
-
-export const action = async ({ request }) => {
-  const { admin } = await authenticate.admin(request);
-  const color = ["Red", "Orange", "Yellow", "Green"][
-    Math.floor(Math.random() * 4)
-  ];
-  const response = await admin.graphql(
-    `#graphql
-      mutation populateProduct($product: ProductCreateInput!) {
-        productCreate(product: $product) {
-          product {
-            id
-            title
-            handle
-            status
-            variants(first: 10) {
-              edges {
-                node {
-                  id
-                  price
-                  barcode
-                  createdAt
-                }
-              }
-            }
-          }
-        }
-      }`,
-    {
-      variables: {
-        product: {
-          title: `${color} Snowboard`,
-        },
-      },
-    },
-  );
-  const responseJson = await response.json();
-  const product = responseJson.data.productCreate.product;
-  const variantId = product.variants.edges[0].node.id;
-  const variantResponse = await admin.graphql(
-    `#graphql
-    mutation shopifyRemixTemplateUpdateVariant($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
-      productVariantsBulkUpdate(productId: $productId, variants: $variants) {
-        productVariants {
-          id
-          price
-          barcode
-          createdAt
-        }
+function OrderManagement() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [itemStrings] = useState(["All"]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [queryValue, setQueryValue] = useState("");
+  const [selectedResources, setSelectedResources] = useState([]);
+  const { mode, setMode } = useSetIndexFiltersMode();
+  const pageSize = 40;
+  const [orders, setOrders] = useState([]);
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await fetch("/routes/api/order/purchaseorder", {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Transform data to match expected structure
+        const transformedOrders = data.data.map((order) => ({
+          id: order.orderId, // Use MongoDB _id as unique identifier
+          orderNumber: order.orderNumber,
+          supplier: order.supplier?.address?.company || "Unknown Supplier",
+          destination: order.supplier?.address
+            ? `${order.supplier.address.city}, ${order.supplier.address.state}, ${order.supplier.address.country}`
+            : "Unknown Destination",
+          status: "Draft", // Default status since not provided in JSON
+          received: "0%", // Default received status
+          total: order.cost?.total || "$0.00",
+          expectedArrival: order.shipment?.estimatedArrival
+            ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
+            : "N/A",
+        }));
+        setOrders(transformedOrders);
+      } else {
+        setError(data.error || "Failed to fetch orders");
       }
-    }`,
-    {
-      variables: {
-        productId: product.id,
-        variants: [{ id: variantId, price: "100.00" }],
-      },
-    },
-  );
-  const variantResponseJson = await variantResponse.json();
-
-  return {
-    product: responseJson.data.productCreate.product,
-    variant: variantResponseJson.data.productVariantsBulkUpdate.productVariants,
+    } catch (err) {
+      setError("Error fetching orders: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
-};
-
-export default function Index() {
-  const fetcher = useFetcher();
-  const shopify = useAppBridge();
-  const isLoading =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
-  const productId = fetcher.data?.product?.id.replace(
-    "gid://shopify/Product/",
-    "",
-  );
+  
 
   useEffect(() => {
-    if (productId) {
-      shopify.toast.show("Product created");
+    if (location.pathname === "/app") {
+      fetchOrders();
     }
-  }, [productId, shopify]);
-  const generateProduct = () => fetcher.submit({}, { method: "POST" });
+  }, [location.pathname]);
+
+  const viewTabs = useMemo(
+    () =>
+      itemStrings.map((item, index) => ({
+        content: item,
+        index,
+        id: `${item}-${index}`,
+        isLocked: index === 0,
+      })),
+    [itemStrings],
+  );
+
+  const filteredOrders = useMemo(() => {
+    let result = Array.isArray(orders) ? [...orders] : [];
+    if (queryValue) {
+      const lowerQuery = queryValue.toLowerCase();
+      result = result.filter(
+        (o) =>
+          o.orderNumber.toLowerCase().includes(lowerQuery) ||
+          o.supplier.toLowerCase().includes(lowerQuery) ||
+          o.destination.toLowerCase().includes(lowerQuery),
+      );
+    }
+    return result;
+  }, [orders, queryValue]);
+
+  const paginatedOrders = useMemo(
+    () =>
+      filteredOrders.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize,
+      ),
+    [filteredOrders, currentPage],
+  );
+
+  const handleSelectionChange = useCallback(
+    (selectionType, toggleType, selection) => {
+      if (selectionType === "single") {
+        setSelectedResources((prev) =>
+          toggleType
+            ? [...new Set([...prev, selection])]
+            : prev.filter((id) => id !== selection),
+        );
+      }
+    },
+    [],
+  );
+
+  const allResourcesSelected =
+    paginatedOrders.length > 0 &&
+    paginatedOrders.every((o) => selectedResources.includes(o.id));
+
+  const startIdx =
+    filteredOrders.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endIdx = Math.min(currentPage * pageSize, filteredOrders.length);
+  const paginationLabel = `${startIdx} - ${endIdx} of ${filteredOrders.length}`;
+
+  const breakpoints = useBreakpoints();
+  const condensed = breakpoints.smDown;
+console.log(paginatedOrders)
+
+  const handleRowClick = useCallback(
+    (id) => {
+      navigate(`/app/purchase-order/${id}`, {
+        state: { order: orders.find((o) => o.id === id) },
+      });
+    },
+    [navigate, orders],
+  );
+
+  const rowMarkup = paginatedOrders.map(
+    (
+      {
+        id,
+        orderNumber,
+        supplier,
+        destination,
+        status,
+        received,
+        total,
+        expectedArrival,
+      },
+      index,
+    ) => (
+      <IndexTable.Row
+        id={id}
+        key={id}
+        selected={selectedResources.includes(id)}
+        position={index}
+        onClick={() => {
+          (setLoading(true), handleRowClick(id));
+        }}
+        style={{ cursor: "pointer" }}
+      >
+        <IndexTable.Cell>
+          <Text variant="bodyMd" fontWeight="semibold" as="span">
+            {orderNumber}
+          </Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text>{supplier}</Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text>{destination}</Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Badge tone="warning" progress="incomplete">
+            <Text variant="headingXs" as="h5">
+              {status}
+            </Text>
+          </Badge>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text>{received}</Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text numeric>{total}</Text>
+        </IndexTable.Cell>
+        <IndexTable.Cell>
+          <Text>{expectedArrival}</Text>
+        </IndexTable.Cell>
+      </IndexTable.Row>
+    ),
+  );
 
   return (
-    <Page>
-      <TitleBar title="Remix app template">
-        <button variant="primary" onClick={generateProduct}>
-          Generate a product
-        </button>
-      </TitleBar>
-      <BlockStack gap="500">
-        <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="500">
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Congrats on creating a new Shopify app 🎉
-                  </Text>
-                  <Text variant="bodyMd" as="p">
-                    This embedded app template uses{" "}
-                    <Link
-                      url="https://shopify.dev/docs/apps/tools/app-bridge"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      App Bridge
-                    </Link>{" "}
-                    interface examples like an{" "}
-                    <Link url="/app/additional" removeUnderline>
-                      additional page in the app nav
-                    </Link>
-                    , as well as an{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      Admin GraphQL
-                    </Link>{" "}
-                    mutation demo, to provide a starting point for app
-                    development.
-                  </Text>
-                </BlockStack>
-                <BlockStack gap="200">
-                  <Text as="h3" variant="headingMd">
-                    Get started with products
-                  </Text>
-                  <Text as="p" variant="bodyMd">
-                    Generate a product with GraphQL and get the JSON output for
-                    that product. Learn more about the{" "}
-                    <Link
-                      url="https://shopify.dev/docs/api/admin-graphql/latest/mutations/productCreate"
-                      target="_blank"
-                      removeUnderline
-                    >
-                      productCreate
-                    </Link>{" "}
-                    mutation in our API references.
-                  </Text>
-                </BlockStack>
-                <InlineStack gap="300">
-                  <Button loading={isLoading} onClick={generateProduct}>
-                    Generate a product
-                  </Button>
-                  {fetcher.data?.product && (
-                    <Button
-                      url={`shopify:admin/products/${productId}`}
-                      target="_blank"
-                      variant="plain"
-                    >
-                      View product
-                    </Button>
-                  )}
-                </InlineStack>
-                {fetcher.data?.product && (
-                  <>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
-                      productCreate mutation
-                    </Text>
-                    <Box
-                      padding="400"
-                      background="bg-surface-active"
-                      borderWidth="025"
-                      borderRadius="200"
-                      borderColor="border"
-                      overflowX="scroll"
-                    >
-                      <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(fetcher.data.product, null, 2)}
-                        </code>
-                      </pre>
-                    </Box>
-                    <Text as="h3" variant="headingMd">
-                      {" "}
-                      productVariantsBulkUpdate mutation
-                    </Text>
-                    <Box
-                      padding="400"
-                      background="bg-surface-active"
-                      borderWidth="025"
-                      borderRadius="200"
-                      borderColor="border"
-                      overflowX="scroll"
-                    >
-                      <pre style={{ margin: 0 }}>
-                        <code>
-                          {JSON.stringify(fetcher.data.variant, null, 2)}
-                        </code>
-                      </pre>
-                    </Box>
-                  </>
-                )}
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-          <Layout.Section variant="oneThird">
-            <BlockStack gap="500">
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    App template specs
-                  </Text>
-                  <BlockStack gap="200">
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Framework
-                      </Text>
-                      <Link
-                        url="https://remix.run"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Remix
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Database
-                      </Text>
-                      <Link
-                        url="https://www.prisma.io/"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        Prisma
-                      </Link>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        Interface
-                      </Text>
-                      <span>
-                        <Link
-                          url="https://polaris.shopify.com"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          Polaris
-                        </Link>
-                        {", "}
-                        <Link
-                          url="https://shopify.dev/docs/apps/tools/app-bridge"
-                          target="_blank"
-                          removeUnderline
-                        >
-                          App Bridge
-                        </Link>
-                      </span>
-                    </InlineStack>
-                    <InlineStack align="space-between">
-                      <Text as="span" variant="bodyMd">
-                        API
-                      </Text>
-                      <Link
-                        url="https://shopify.dev/docs/api/admin-graphql"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphQL API
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-              <Card>
-                <BlockStack gap="200">
-                  <Text as="h2" variant="headingMd">
-                    Next steps
-                  </Text>
-                  <List>
-                    <List.Item>
-                      Build an{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/getting-started/build-app-example"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        {" "}
-                        example app
-                      </Link>{" "}
-                      to get started
-                    </List.Item>
-                    <List.Item>
-                      Explore Shopify’s API with{" "}
-                      <Link
-                        url="https://shopify.dev/docs/apps/tools/graphiql-admin-api"
-                        target="_blank"
-                        removeUnderline
-                      >
-                        GraphiQL
-                      </Link>
-                    </List.Item>
-                  </List>
-                </BlockStack>
-              </Card>
-            </BlockStack>
-          </Layout.Section>
-        </Layout>
-      </BlockStack>
-    </Page>
+    <>
+      {/* Loader */}
+      {loading && (
+        <EmptyState
+          inlineAlign="center"
+          verticalAlign="center"
+          maxHeight="500px"
+        >
+          <Spinner accessibilityLabel="Loading files" size="large" />
+        </EmptyState>
+      )}
+
+      {/* Error */}
+      {!loading && error && (
+        <Box padding="400">
+          <Text tone="critical">{error}</Text>
+          <Button onClick={fetchOrders}>Retry</Button>
+        </Box>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && (!orders || orders.length === 0) && (
+        <EmptyState
+          heading="No purchase orders"
+          action={{
+            content: "Create purchase order",
+            url: "/app/purchaseOrder-create",
+            onAction: () => setLoading(true),
+          }}
+          image="https://cdn.shopify.com/s/files/1/0909/0206/9619/files/emptystate-files.avif?width=500&v=1750777601"
+        >
+          <p>Looks like your library is empty.</p>
+        </EmptyState>
+      )}
+
+      {/* Main Page */}
+      {!loading && !error && orders && orders.length > 0 && (
+        <Page
+          fullWidth
+          title={
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <Icon source={OrderIcon} />
+              <Text variant="headingLg" as="h5">
+                Purchase Orders
+              </Text>
+            </div>
+          }
+          primaryAction={
+            <Button
+              loading={loading}
+              variant="primary"
+              onClick={() => {
+                (navigate("/app/purchaseOrder-create"), setLoading(true));
+              }}
+            >
+              Create purchase order
+            </Button>
+          }
+        >
+          <LegacyCard>
+            <Box paddingBlockEnd="400">
+              <IndexFilters
+                queryValue={queryValue}
+                onQueryChange={setQueryValue}
+                onQueryClear={() => setQueryValue("")}
+                queryPlaceholder="Search by order, supplier, or destination"
+                mode={mode}
+                setMode={setMode}
+                tabs={viewTabs}
+                cancelAction={{
+                  onAction: () => setQueryValue(""),
+                  disabled: false,
+                  loading: false,
+                }}
+                filters={[]}
+              />
+              <IndexTable
+                condensed={condensed}
+                resourceName={{
+                  singular: "purchase order",
+                  plural: "purchase orders",
+                }}
+                itemCount={paginatedOrders.length}
+                selectedItemsCount={
+                  selectedResources.filter((id) =>
+                    paginatedOrders.some((o) => o.id === id),
+                  ).length
+                }
+                allResourcesSelected={allResourcesSelected}
+                onSelectionChange={handleSelectionChange}
+                headings={[
+                  { title: "Purchase order" },
+                  { title: "Supplier" },
+                  { title: "Destination" },
+                  { title: "Status" },
+                  { title: "Received" },
+                  { title: "Total" },
+                  { title: "Expected arrival" },
+                ]}
+                pagination={{
+                  hasPrevious: currentPage > 1,
+                  hasNext: currentPage * pageSize < filteredOrders.length,
+                  onPrevious: () =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1)),
+                  onNext: () => setCurrentPage((prev) => prev + 1),
+                  label: paginationLabel,
+                }}
+              >
+                {rowMarkup}
+              </IndexTable>
+            </Box>
+          </LegacyCard>
+        </Page>
+      )}
+    </>
   );
 }
+export default OrderManagement;
