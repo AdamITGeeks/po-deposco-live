@@ -50,18 +50,21 @@ export default function AddProductsSection({
     },
     [additional, onAdditionalUpdate],
   );
+  console.log(selectedProducts, "selected");
 
   const handleSelection = useCallback(
     ({ selection }) => {
       const variants = selection.flatMap((product) => product.variants);
+      console.log(variants, "varinet");
       const clearedVariants = variants.map((variant) => ({
         ...variant,
-        sku: "",
+        sku: variant?.sku,
         inventoryQuantity: "",
         cost: "",
         tax: "0",
         total: "0",
       }));
+      console.log(clearedVariants, "clear");
       setSelectedProducts((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
         const newUniqueVariants = clearedVariants.filter(
@@ -107,6 +110,7 @@ export default function AddProductsSection({
       });
 
       if (picker && picker.selection && picker.selection.length > 0) {
+        console.log(picker);
         handleSelection(picker);
       } else {
         setSearchValue("");
@@ -278,12 +282,12 @@ export default function AddProductsSection({
                                   : displayName}
                             </Text>
                             <TextField
-                              disabled={isEditing === false}
+                              disabled={true}
                               type="text"
                               value={item.sku || ""}
-                              onChange={(value) =>
-                                updateVariantField(id, "sku", value)
-                              }
+                              // onChange={(value) =>
+                              //   updateVariantField(id, "sku", value)
+                              // }
                               labelHidden
                               label="Supplier SKU"
                             />
@@ -441,12 +445,6 @@ export default function AddProductsSection({
               <Text variant="bodyMd" fontWeight="bold">
                 Total
               </Text>{" "}
-              {console.log(
-                "Cost total:",
-                cost.total,
-                shipping,
-                calculateSubtotal(),
-              )}
               <Text fontWeight="bold">
                 {!cost.total === "$0.00"
                   ? cost.total

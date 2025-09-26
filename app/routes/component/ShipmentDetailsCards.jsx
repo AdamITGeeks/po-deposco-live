@@ -163,13 +163,24 @@ export default function ShipmentDetailsCard({
             allowRange={false}
           />
         </Popover>
-        <Select
+        {/* <Select
           disabled={!isEditing}
           label="Shipping carrier"
           options={carrierOptions}
           onChange={handleCarrierChange}
           value={shippingCarrier.toLowerCase() || ""}
+        /> */}
+        <TextField
+          disabled={!isEditing}
+          label="Shipping carrier"
+          value={shippingCarrier}
+          onChange={(value) => {
+            setShippingCarrier(value);
+            onUpdate({ ...data, shippingCarrier: value });
+          }}
+          placeholder="Enter carrier name"
         />
+
         <TextField
           label="Tracking number"
           disabled={!isEditing}

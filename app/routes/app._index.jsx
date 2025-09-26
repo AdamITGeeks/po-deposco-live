@@ -66,7 +66,6 @@ function OrderManagement() {
       setLoading(false);
     }
   };
-  
 
   useEffect(() => {
     if (location.pathname === "/app") {
@@ -132,7 +131,7 @@ function OrderManagement() {
 
   const breakpoints = useBreakpoints();
   const condensed = breakpoints.smDown;
-console.log(paginatedOrders)
+  console.log(paginatedOrders);
 
   const handleRowClick = useCallback(
     (id) => {

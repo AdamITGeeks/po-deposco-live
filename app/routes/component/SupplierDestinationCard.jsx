@@ -19,24 +19,9 @@ export default function SupplierDestinationCard({
   currencies,
   isEditing = true,
 }) {
-  console.log(data, "curew");
+  console.log(data, "currencies");
   // Payment terms state
-  const [paymentTerms, setPaymentTerms] = useState(data.paymentTerms);
 
-  const handlePaymentTermsChange = useCallback(
-    (value) => {
-      setPaymentTerms(value);
-      onUpdate({ ...data, paymentTerms: value });
-    },
-    [data, onUpdate],
-  );
-
-  const paymentTermsOptions = [
-    { label: "None", value: "none" },
-    { label: "Payment in advance", value: "advance" },
-    { label: "Payment on advance", value: "receipt" },
-    { label: "Cash on Delivery", value: "dilivery" },
-  ];
 
   // Supplier currency state
   const [supplierCurrency, setSupplierCurrency] = useState(
@@ -114,25 +99,27 @@ export default function SupplierDestinationCard({
               borderRight: "1px solid #dcdcdc",
             }}
           >
-            <BlockStack gap="200">
-              <Text variant="bodyMd" fontWeight="bold">
-                Supplier
-              </Text>
-              <Text fontWeight="bold" variant="bodyLg" tone="subdued">
-                {address.company}
-              </Text>
-              <Text tone="subdued">
-                {address.street}, {address.city}, {address.state}{" "}
-                {address.zipCode}, {address.country}
-              </Text>
-              <BlockStack inlineAlign="start">
-                <Button variant="plain" onClick={toggleModal}>
-                  Edit supplier
-                </Button>
+            <Text variant="bodyMd" fontWeight="bold">
+              Supplier
+            </Text>
+            {address && (
+              <BlockStack gap="200">
+                <Text fontWeight="bold" variant="bodyLg" tone="subdued">
+                  {address.company}
+                </Text>
+                <Text tone="subdued">
+                  {address.street}, {address.city}, {address.state}{" "}
+                  {address.zipCode}, {address.country}
+                </Text>
               </BlockStack>
+            )}
+
+            <BlockStack inlineAlign="start">
+              <Button variant="plain" onClick={toggleModal}>
+                Edit supplier
+              </Button>
             </BlockStack>
           </Box>
-
           <BlockStack gap="200">
             <Text variant="bodyMd" fontWeight="bold">
               Destination
@@ -149,14 +136,7 @@ export default function SupplierDestinationCard({
         <Bleed marginInline="400">
           <Divider />
         </Bleed>
-        <InlineGrid columns={2} gap="400">
-          <Select
-            disabled={!isEditing}
-            label="Payment terms (optional)"
-            options={paymentTermsOptions}
-            value={paymentTerms}
-            onChange={handlePaymentTermsChange}
-          />
+        <InlineGrid columns={1} gap="400">
           <Select
             disabled={!isEditing}
             label="Supplier currency"
@@ -175,15 +155,18 @@ export default function SupplierDestinationCard({
         primaryAction={{
           content: "Save",
           onAction: handleSave,
-          disabled: !isEditing,
+          disabled: !isEditing || !tempAddress,
         }}
         secondaryActions={[
           { content: "Close", onAction: toggleModal },
           {
             content: "Delete supplier",
             destructive: true,
-            onAction: () => {},
-            disabled: !isEditing,
+            onAction: () => {
+              toggleModal(); // ✅ call the function
+              setAddress(null);
+            },
+            disabled: !isEditing || !address,
           },
         ]}
       >
@@ -192,7 +175,7 @@ export default function SupplierDestinationCard({
             <TextField
               disabled={!isEditing}
               label="Company"
-              value={tempAddress.company}
+              value={tempAddress?.company || ""}
               onChange={(value) => handleTempAddressChange("company", value)}
               autoComplete="off"
             />
@@ -200,30 +183,30 @@ export default function SupplierDestinationCard({
               disabled={!isEditing}
               label="Country/Region"
               options={countryOptions}
-              value={tempAddress.country}
+              value={tempAddress?.country || ""}
               onChange={(value) => handleTempAddressChange("country", value)}
             />
             <TextField
               disabled={!isEditing}
               label="Address"
-              value={tempAddress.street}
+              value={tempAddress?.street || ""}
               onChange={(value) => handleTempAddressChange("street", value)}
               autoComplete="off"
-              placeholder="Q. 1224 Burke Street"
+              placeholder=""
             />
             <TextField
               disabled={!isEditing}
               label="Apartment, suite, etc."
-              value={tempAddress.apartment}
+              value={tempAddress?.apartment || ""}
               onChange={(value) => handleTempAddressChange("apartment", value)}
               autoComplete="off"
-              placeholder="123232332312"
+              placeholder=""
             />
             <InlineGrid columns={2} gap="200">
               <TextField
                 disabled={!isEditing}
                 label="City"
-                value={tempAddress.city}
+                value={tempAddress?.city || ""}
                 onChange={(value) => handleTempAddressChange("city", value)}
                 autoComplete="off"
               />
@@ -231,21 +214,21 @@ export default function SupplierDestinationCard({
                 disabled={!isEditing}
                 label="State"
                 options={stateOptions}
-                value={tempAddress.state}
+                value={tempAddress?.state || ""}
                 onChange={(value) => handleTempAddressChange("state", value)}
               />
             </InlineGrid>
             <TextField
               disabled={!isEditing}
               label="ZIP code"
-              value={tempAddress.zipCode}
+              value={tempAddress?.zipCode || ""}
               onChange={(value) => handleTempAddressChange("zipCode", value)}
               autoComplete="off"
             />
             <TextField
               disabled={!isEditing}
               label="Contact name"
-              value={tempContact.name}
+              value={tempContact?.name || ""}
               onChange={(value) => handleTempContactChange("name", value)}
               autoComplete="off"
             />
@@ -253,7 +236,7 @@ export default function SupplierDestinationCard({
               <TextField
                 disabled={!isEditing}
                 label="Email address"
-                value={tempContact.email}
+                value={tempContact?.email || ""}
                 onChange={(value) => handleTempContactChange("email", value)}
                 autoComplete="off"
               />
@@ -261,11 +244,11 @@ export default function SupplierDestinationCard({
                 disabled={!isEditing}
                 label="Phone number"
                 type="number"
-                value={tempContact.phone.split(" ")[0]}
+                value={tempContact?.phone.split(" ")[0]}
                 onChange={(value) =>
                   handleTempContactChange(
                     "phone",
-                    `${value} ${tempContact.phone.split(" ")[1] || ""}`,
+                    `${value} ${tempContact?.phone.split(" ")[1] || ""}`,
                   )
                 }
               />
