@@ -253,7 +253,6 @@ export default function EditPurchaseOrderPage() {
     { label: "USDC (USDC USD)", value: "USDC" },
   ];
 
-  console.log(order, "order");
   const totalTax = order.products.reduce((sum, product) => {
     const tax =
       typeof product.tax === "string"
@@ -278,8 +277,6 @@ export default function EditPurchaseOrderPage() {
     additional: order.additional,
     cost: order.cost,
   });
-
-  console.log(formData, "formData");
 
   const [isEditing, setIsEditing] = useState(false); // initially read-only
   const [error, setError] = useState(null);
@@ -334,65 +331,90 @@ export default function EditPurchaseOrderPage() {
     }
   };
 
-  console.log(`_${order.orderNumber}`, "order number");
-
   const orderNumber = order.orderNumber;
-
-  // "_" hatao
   const cleanOrder = orderNumber.replace(/^_/, "");
-
-  // "PO" aur number alag karo
   const prefix = cleanOrder.match(/[A-Za-z]+/)[0]; // "PO"
   const number = cleanOrder.match(/\d+/)[0]; // "1"
 
-  // console.log("Prefix:", prefix);
-
-  // console.log("Number:", number);
-  // console.log(formData?.cost?.total);
-  console.log(order.products, "products");
-  const formatOrderLines = (order, prefix, number) => {
-    return order.products.map((item, index) => ({
-      businessUnit: "FIREQUOCF_OCF",
-      lineNumber: `${item?.id}--${index + 1}`,
-      customerLineNumber: `#${number}--${index + 1}`,
-      importReference: `${prefix}_${number}--${index + 1}`,
-      lineStatus: "New",
-      orderPackQuantity: item.quantity || 0,
-      receivedPackQuantity: 0.0,
-      receivedDamagedPackQuantity: 0.0,
-      itemNumber: item.sku || null,
-      itemDetails: {
-        type: "Each",
-        quantity: item.quantity || 0,
-        weight: 0.0,
-        dimension: {
-          length: 0.0,
-          width: 0.0,
-          height: 0.0,
-          units: "Inch",
-        },
-      },
-      taxCost: 0.0,
-      unitCost: item.price || 0.0,
-      productCode: item.sku || "3456",
-      createdDateTime: order?.createdAt,
-      updatedDateTime: order?.updatedAt,
-      placedDate: order?.createdAt,
-      plannedShipDate: order?.createdAt,
-      plannedArrivalDate: null,
-      actualArrivalDate: null,
-      customFields: {
-        customField: [
-          { name: "field1Name", value: "field1Value", type: "String" },
-          { name: "field2Name", value: "field2Value", type: "Integer" },
-          { name: "field3Name", value: "field3Value", type: "Double" },
-        ],
-      },
-      notes: null,
-      customMappings: null,
-      orderDiscountSubtotal: 0.0,
-    }));
+  const parseCost = (val) => {
+    if (!val) return 0.0;
+    if (typeof val === "number") return val;
+    return parseFloat(val.replace(/[^0-9.-]+/g, "")) || 0.0;
   };
+
+  // Normalized cost object
+  const normalizedCost = {
+    subtotal: parseCost(order?.cost?.subtotal),
+    shipping: parseCost(order?.cost?.shipping),
+    taxes: parseCost(order?.cost?.taxes_included),
+    total: parseCost(order?.cost?.total),
+  };
+
+const createdAt = new Date(order?.createdAt);
+
+const year = createdAt.getFullYear();
+const month = String(createdAt.getMonth() + 1).padStart(2, "0"); // 0-indexed, isliye +1
+const day = String(createdAt.getDate()).padStart(2, "0");
+
+const formattedDateCreateDate = `${year}-${month}-${day}`;
+
+console.log(formattedDateCreateDate); // "2025-09-26"
+
+  const updateAt = new Date(order?.updatedAt);
+  const formattedDateUpdateDate = updateAt.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
+  });
+  console.log(formattedDateCreateDate, "formattedDateCreateDate");
+
+  const formatOrderLines = (order) => {
+    return {
+      orderLine: order.products.map((item, index) => ({
+        businessUnit: "FIREQUOCF_OCF",
+        lineNumber: item?.sku,
+        customerLineNumber: `#${item?.sku}--${index + 1}`,
+        importReference: `${prefix}_${number}--${index + 1}`,
+        lineStatus: "New",
+        orderPackQuantity: item.quantity || 0,
+        receivedPackQuantity: 0.0,
+        receivedDamagedPackQuantity: 0.0,
+        itemNumber: item?.sku || index + 1,
+        itemDetails: {
+          type: "Each",
+          quantity: item.quantity || 0,
+          weight: 0.0,
+          dimension: {
+            length: 0.0,
+            width: 0.0,
+            height: 0.0,
+            units: "Inch",
+          },
+        },
+        // taxCost: 0.0,
+        // unitCost: item.price || 0.0,
+        productCode: item?.sku,
+        createdDateTime: formattedDateCreateDate,
+        updatedDateTime: formattedDateUpdateDate,
+        placedDate: formattedDateCreateDate,
+        plannedShipDate: formattedDateCreateDate,
+        plannedArrivalDate: formattedDateCreateDate,
+        actualArrivalDate: formattedDateCreateDate,
+        customFields: {
+          customField: [
+            { name: "field1Name", value: "field1Value", type: "String" },
+            { name: "field2Name", value: "field2Value", type: "Integer" },
+            { name: "field3Name", value: "field3Value", type: "Double" },
+          ],
+        },
+        notes: null,
+        customMappings: null,
+        orderDiscountSubtotal: 0.0,
+      })),
+    };
+  };
+  console.log(formattedDateCreateDate, "formattedDateCreateDate");
 
   // ✅ Main Payload
   const deposcoPayload = {
@@ -404,26 +426,43 @@ export default function EditPurchaseOrderPage() {
         status: "New",
         customerOrderNumber: `#${number}`,
         orderSource: "shopify",
-        orderSubTotal: order?.cost?.subtotal || 0.0,
-        orderUntaxableTotal: 0.0,
-        orderShipTotal: order?.cost?.shipping || 0.0,
-        orderShippingTotal: order?.cost?.shipping || 0.0,
-        orderTaxTotal: totalTax || 0.0,
-        orderTotal: grandTotal || 0.0,
-        shipVendor: "UPS",
-        shipVia: "Shipping Standard",
+        // ✅ use normalized cost values
+        cost: {
+          subtotal: `$${normalizedCost.subtotal || "100"}`,
+          untaxableTotal: `$${0.0 || "100"}`,
+          shipTotal: `$${normalizedCost.shipping || "100"}`,
+          shippingTotal: `$${normalizedCost.shipping || "100"}`,
+          taxTotal: `$${normalizedCost.taxes || "100"}`,
+          total: `$${normalizedCost.total || "100"}`,
+        },
+
+        shipVendor: order?.supplier?.contact?.name || "Default Name",
+        shipVia: order?.shipment?.shippingCarrier || "Shipping Standard",
         freight: {
           termsType: "Prepaid",
           billToAddress: null,
         },
         facility: "OCF",
         shipToAddress: {
-          attention: order.supplier?.contact?.name || "Unknown",
-          addressLine1: order?.address?.street || "Unknown Street",
-          city: order?.address?.city || "Unknown City", // ✅ fixed OR
-          stateProvinceCode: order?.address?.state || "XX",
-          postalCode: order?.address?.zipCode || "00000",
-          countryCode: order?.address?.country || "US",
+          attention: order?.supplier?.contact?.name || "Unknown",
+          addressLine1:
+            order?.destination?.address?.formatted?.[2] || "Unknown Street",
+          city: order?.destination?.address?.city || "Unknown City",
+          stateProvinceCode: order?.destination?.address?.state || "XX",
+          postalCode: order?.destination?.address?.zipCode || "00000",
+          countryCode: order?.destination?.address?.countryCode || "US",
+          phone: order?.supplier?.contact?.phone || "0000000000",
+          email: order?.supplier?.contact?.email || "unknown@example.com",
+          name: order?.supplier?.contact?.name || "Default Name",
+        },
+        billToAddress: {
+          attention: order?.supplier?.contact?.name || "Unknown",
+          addressLine1:
+            order?.destination?.address?.formatted?.[2] || "Unknown Street",
+          city: order?.destination?.address?.city || "Unknown City",
+          stateProvinceCode: order?.destination?.address?.state || "XX",
+          postalCode: order?.destination?.address?.zipCode || "00000",
+          countryCode: order?.destination?.address?.countryCode || "US",
           phone: order?.supplier?.contact?.phone || "0000000000",
           email: order?.supplier?.contact?.email || "unknown@example.com",
           name: order?.supplier?.contact?.name || "Default Name",
@@ -438,20 +477,18 @@ export default function EditPurchaseOrderPage() {
             { name: "field3Name", value: "field3Value", type: "Double" },
           ],
         },
-        createdDateTime: order?.createdAt,
-        updatedDateTime: order?.updatedAt,
-        placedDate: order?.createdAt,
-        plannedShipDate: order?.createdAt,
-        plannedArrivalDate: null,
-        actualArrivalDate: null,
+        placedDate: formattedDateCreateDate,
+        plannedArrivalDate: order?.shipment?.estimatedArrival,
+        actualArrivalDate: order?.shipment?.estimatedArrival,
         orderLines: formatOrderLines(order),
       },
     ],
   };
 
   const handlepayload = async () => {
+      console.log(deposcoPayload,"deposcoPayloaddeposcoPayloaddeposcoPayloaddeposcoPayload",);
     try {
-      const res = await fetch("/routes/api/purchaseDb", {
+      const res = await fetch("/routes/api/order/orderDeposco", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(deposcoPayload),
@@ -464,7 +501,7 @@ export default function EditPurchaseOrderPage() {
     }
   };
 
-  console.log(deposcoPayload, "deposcoPayload");
+  // console.log(deposcoPayload, "deposcoPayload");
   return (
     <Page
       title={`Purchase Order - ${order.orderNumber}`}

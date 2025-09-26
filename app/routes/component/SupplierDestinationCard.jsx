@@ -23,7 +23,9 @@ export default function SupplierDestinationCard({
   onDestinationUpdate,
 }) {
   // Supplier currency state
-  const [supplierCurrency, setSupplierCurrency] = useState(data.supplierCurrency);
+  const [supplierCurrency, setSupplierCurrency] = useState(
+    data.supplierCurrency,
+  );
   const handleSupplierCurrencyChange = useCallback(
     (value) => {
       setSupplierCurrency(value);
@@ -45,18 +47,23 @@ export default function SupplierDestinationCard({
 
   // Location state from LocationAddress
   const locations = useMemo(() => {
-    return LocationAddress?.data?.locations?.edges?.map(({ node }) => node) || [];
+    return (
+      LocationAddress?.data?.locations?.edges?.map(({ node }) => node) || []
+    );
   }, [LocationAddress]);
 
   const [selectedLocation, setSelectedLocation] = useState(() => {
     // If destination has address data, try to match to a location for edit mode
-    if (destination?.address?.formatted && destination.address.formatted.length > 0) {
+    if (
+      destination?.address?.formatted &&
+      destination.address.formatted.length > 0
+    ) {
       const destFormatted = Array.isArray(destination.address.formatted)
-        ? destination.address.formatted.join(', ')
+        ? destination.address.formatted.join(", ")
         : destination.address.formatted;
       const matchingLocation = locations.find((loc) => {
         const locFormatted = Array.isArray(loc.address.formatted)
-          ? loc.address.formatted.join(', ')
+          ? loc.address.formatted.join(", ")
           : loc.address.formatted;
         return locFormatted === destFormatted;
       });
@@ -83,48 +90,50 @@ export default function SupplierDestinationCard({
   }, [locations]);
 
   // Handle location selection
-const handleLocationChange = useCallback(
-  (value) => {
-    const selected = locations.find((loc) => loc.name === value) || {
-      name: value,
-      address: {
-        city: "",
-        country: "United States", // Default country agar location nahi mili
-        countryCode: "",
-        phone: "",
-        zip: "",
-        province: "",
-        provinceCode: "",
-        formatted: [],
-      },
-    };
-    setSelectedLocation(selected);
+  const handleLocationChange = useCallback(
+    (value) => {
+      const selected = locations.find((loc) => loc.name === value) || {
+        name: value,
+        address: {
+          city: "",
+          country: "United States", // Default country agar location nahi mili
+          countryCode: "",
+          phone: "",
+          zip: "",
+          province: "",
+          provinceCode: "",
+          formatted: [],
+        },
+      };
+      setSelectedLocation(selected);
 
-    // Update complete destination object
-    const updatedDestination = {
-      country: selected.address?.country || "United States", // Ensure country is set
-      address: {
-        phone: selected.address?.phone || "",
-        provinceCode: selected.address?.provinceCode || "",
-        province: selected.address?.province || "",
-        formatted: Array.isArray(selected.address?.formatted)
-          ? selected.address.formatted
-          : selected.address?.formatted ? [selected.address.formatted] : [],
-        countryCode: selected.address?.countryCode || "",
-        company: selected.address?.company || "",
-        street: selected.address?.street || "",
-        apartment: selected.address?.apartment || "",
-        city: selected.address?.city || "",
-        state: selected.address?.province || "", // Map province to state if needed
-        zipCode: selected.address?.zip || "",
-        country: selected.address?.country || "",
-      },
-    };
+      // Update complete destination object
+      const updatedDestination = {
+        country: selected.address?.country || "United States", // Ensure country is set
+        address: {
+          phone: selected.address?.phone || "",
+          provinceCode: selected.address?.provinceCode || "",
+          province: selected.address?.province || "",
+          formatted: Array.isArray(selected.address?.formatted)
+            ? selected.address.formatted
+            : selected.address?.formatted
+              ? [selected.address.formatted]
+              : [],
+          countryCode: selected.address?.countryCode || "",
+          company: selected.address?.company || "",
+          street: selected.address?.street || "",
+          apartment: selected.address?.apartment || "",
+          city: selected.address?.city || "",
+          state: selected.address?.province || "", // Map province to state if needed
+          zipCode: selected.address?.zip || "",
+          country: selected.address?.country || "",
+        },
+      };
 
-    onDestinationUpdate(updatedDestination);
-  },
-  [locations, onDestinationUpdate],
-);
+      onDestinationUpdate(updatedDestination);
+    },
+    [locations, onDestinationUpdate],
+  );
 
   const toggleModal = useCallback(() => {
     if (!modalActive) {
@@ -182,14 +191,14 @@ const handleLocationChange = useCallback(
                   {address.company}
                 </Text>
                 <Text tone="subdued">
-                  {address.street}, {address.city}, {address.state}{" "}
-                  {address.zipCode}, {address.country}
+                  {address.street} {address.city} {address.state}{" "}
+                  {address.zipCode} {address.country}
                 </Text>
               </BlockStack>
             )}
             <BlockStack inlineAlign="start">
               <Button variant="plain" onClick={toggleModal}>
-                Edit supplier
+                {address ? " Edit supplier" : "Add supplier"}
               </Button>
             </BlockStack>
           </Box>
@@ -198,7 +207,6 @@ const handleLocationChange = useCallback(
               Destination
             </Text>
             <Select
-
               options={locationOptions}
               value={selectedLocation?.name || ""}
               onChange={handleLocationChange}
@@ -208,7 +216,9 @@ const handleLocationChange = useCallback(
             <Text fontWeight="bold" variant="bodyLg">
               {selectedLocation?.name || "No location selected"}
             </Text>
-            <Text tone="subdued">{selectedLocation?.address?.formatted?.join(', ') || ""}</Text>
+            <Text tone="subdued">
+              {selectedLocation?.address?.formatted?.join(", ") || ""}
+            </Text>
           </BlockStack>
         </InlineGrid>
 
@@ -220,7 +230,7 @@ const handleLocationChange = useCallback(
             disabled={!isEditing}
             label="Supplier currency"
             options={currencies}
-            value={supplierCurrency || ""}
+            value={supplierCurrency?.toUpperCase() || ""}
             onChange={handleSupplierCurrencyChange}
           />
         </InlineGrid>
@@ -258,13 +268,14 @@ const handleLocationChange = useCallback(
               onChange={(value) => handleTempAddressChange("company", value)}
               autoComplete="off"
             />
-            <Select
+            <TextField
               disabled={!isEditing}
               label="Country/Region"
-              options={countryOptions}
               value={tempAddress?.country || ""}
               onChange={(value) => handleTempAddressChange("country", value)}
+              autoComplete="off"
             />
+
             <TextField
               disabled={!isEditing}
               label="Address"
@@ -273,14 +284,7 @@ const handleLocationChange = useCallback(
               autoComplete="off"
               placeholder=""
             />
-            <TextField
-              disabled={!isEditing}
-              label="Apartment, suite, etc."
-              value={tempAddress?.apartment || ""}
-              onChange={(value) => handleTempAddressChange("apartment", value)}
-              autoComplete="off"
-              placeholder=""
-            />
+
             <InlineGrid columns={2} gap="200">
               <TextField
                 disabled={!isEditing}
@@ -289,14 +293,15 @@ const handleLocationChange = useCallback(
                 onChange={(value) => handleTempAddressChange("city", value)}
                 autoComplete="off"
               />
-              <Select
+              <TextField
                 disabled={!isEditing}
                 label="State"
-                options={stateOptions}
                 value={tempAddress?.state || ""}
                 onChange={(value) => handleTempAddressChange("state", value)}
+                autoComplete="off"
               />
             </InlineGrid>
+
             <TextField
               disabled={!isEditing}
               label="ZIP code"

@@ -40,15 +40,17 @@ function OrderManagement() {
         cache: "no-store",
       });
       const data = await res.json();
+       console.log(data , "data")
       if (data.success) {
         // Transform data to match expected structure
         const transformedOrders = data.data.map((order) => ({
           id: order.orderId, // Use MongoDB _id as unique identifier
           orderNumber: order.orderNumber,
           supplier: order.supplier?.address?.company || "Unknown Supplier",
-          destination: order.supplier?.address
-            ? `${order.supplier.address.city}, ${order.supplier.address.state}, ${order.supplier.address.country}`
-            : "Unknown Destination",
+          // destination: order.supplier?.address
+          //   ? `${order.supplier.address.city}  ${order.supplier.address.state}  ${order.supplier.address.country}`
+          //   : "Unknown Destination",
+          destination : order?.destination?.address.country,
           status: "Draft", // Default status since not provided in JSON
           received: "0%", // Default received status
           total: order.cost?.total || "$0.00",
@@ -56,6 +58,7 @@ function OrderManagement() {
             ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
             : "N/A",
         }));
+        
         setOrders(transformedOrders);
       } else {
         setError(data.error || "Failed to fetch orders");

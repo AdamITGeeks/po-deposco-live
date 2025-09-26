@@ -7,6 +7,8 @@ import ShipmentDetailsCard from "./component/ShipmentDetailsCards.jsx";
 import { authenticate } from "../shopify.server.js";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { json } from "@remix-run/react";
+import PurchaseOrder from "../models/purchase.js";
+
 export async function loader({ request }) {
   const { admin } = await authenticate.admin(request);
 
@@ -97,6 +99,7 @@ export async function loader({ request }) {
   const uniqueCarrierOptions = Array.from(
     new Map(carrierOptions.map((c) => [c.value, c])).values(),
   );
+  let formattedOrders = []; // declare outside
 
   // Now pass to Select component
   const addressData = await admin.graphql(`
@@ -130,11 +133,35 @@ export async function loader({ request }) {
     `);
 
   const LocationAddress = await addressData.json();
+  try {
+    const orders = await PurchaseOrder.find({}).sort({ orderId: 1 }).lean();
 
+    formattedOrders = orders.map((order) => ({
+      supplier: {
+        address: {
+          street: order.supplier?.address?.street || "",
+          city: order.supplier?.address?.city || "",
+          state: order.supplier?.address?.state || "",
+          zipCode: order.supplier?.address?.zipCode || "",
+          country: order.supplier?.address?.country || "",
+        },
+        contact: {
+          name: order.supplier?.contact?.name || "",
+          email: order.supplier?.contact?.email || "",
+          phone: order.supplier?.contact?.phone || "",
+        },
+      },
+    }));
+  } catch (err) {
+    console.log(err);
+  }
+
+  // Now this works
   return json({
     LocationAddress,
     currencies: uniqueCurrencies,
     carrierOptions: uniqueCarrierOptions,
+    formattedOrders,
   });
 
 }
@@ -143,7 +170,7 @@ export async function loader({ request }) {
 export default function AdditionalPage() {
   const shopify = useAppBridge();
   const navigate = useNavigate();
-  const { carrierOptions, LocationAddress } = useLoaderData();
+  const { carrierOptions, LocationAddress , formattedOrders } = useLoaderData();
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -312,16 +339,16 @@ export default function AdditionalPage() {
 
   const [formData, setFormData] = useState({
     supplier: {
-      paymentTerms: "advance",
-      supplierCurrency: "usd",
+      paymentTerms: "",
+      supplierCurrency: "",
       address: {
-        company: "it gekss",
-        street: "1224 Burke Street",
+        company: "",
+        street: "",
         apartment: "",
-        city: "Hanahan",
-        state: "South Carolina",
-        zipCode: "29410",
-        country: "United States",
+        city: "",
+        state: " ",
+        zipCode: "",
+        country: "",
       },
       contact: {
         name: "",
@@ -469,7 +496,7 @@ export default function AdditionalPage() {
     <Page
       backAction={{ url: "/app" }}
       title={"New Purchase Order"}
-      titleMetadata={<Badge tone="info">Ordered</Badge>}
+      // titleMetadata={<Badge tone="info">Ordered</Badge>}
       primaryAction={
         <Button
           variant="primary"
@@ -494,6 +521,7 @@ export default function AdditionalPage() {
         )}
         <SupplierDestinationCard
           LocationAddress={LocationAddress}
+          formattedOrders={formattedOrders}
           data={formData.supplier}
           currencies={currencies}
           onUpdate={(updatedSupplier) => updateFormData("supplier", updatedSupplier)}

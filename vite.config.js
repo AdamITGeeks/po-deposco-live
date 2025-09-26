@@ -54,13 +54,17 @@ export default defineConfig({
   plugins: [
     remix({
       ignoredRouteFiles: ["**/.*"],
-       routes: async (defineRoutes) => {
+      routes: async (defineRoutes) => {
         return defineRoutes((route) => {
           flatRoutes("routes", defineRoutes);
           route("/routes/api/purchaseDb", "routes/api/purchaseDb.js");
           route(
             "/routes/api/order/purchaseorder",
             "routes/api/order/purchaseorder.js",
+          );
+          route(
+            "/routes/api/order/orderDeposco",
+            "routes/api/order/orderDeposco.js",
           );
         });
       },

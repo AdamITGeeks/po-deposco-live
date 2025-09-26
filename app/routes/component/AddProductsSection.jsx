@@ -50,12 +50,10 @@ export default function AddProductsSection({
     },
     [additional, onAdditionalUpdate],
   );
-  console.log(selectedProducts, "selected");
 
   const handleSelection = useCallback(
     ({ selection }) => {
       const variants = selection.flatMap((product) => product.variants);
-      console.log(variants, "varinet");
       const clearedVariants = variants.map((variant) => ({
         ...variant,
         sku: variant?.sku,
@@ -64,7 +62,6 @@ export default function AddProductsSection({
         tax: "0",
         total: "0",
       }));
-      console.log(clearedVariants, "clear");
       setSelectedProducts((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
         const newUniqueVariants = clearedVariants.filter(
@@ -110,7 +107,6 @@ export default function AddProductsSection({
       });
 
       if (picker && picker.selection && picker.selection.length > 0) {
-        console.log(picker);
         handleSelection(picker);
       } else {
         setSearchValue("");

@@ -1,5 +1,3 @@
-
-
 import { json } from "@remix-run/node";
 import mongoose from "mongoose";
 import PurchaseOrders from "../../models/purchase";
@@ -47,25 +45,65 @@ export async function action({ request }) {
     });
 
     // Build validated data object
+    // const validatedData = {
+    //   supplier: {
+    //     paymentTerms: data.supplier.paymentTerms || "",
+    //     supplierCurrency: data.supplier.supplierCurrency || "",
+    //     address: {
+    //       company: data.supplier.address?.company || "",
+    //       street: data.supplier.address?.street || "",
+    //       apartment: data.supplier.address?.apartment || "",
+    //       city: data.supplier.address?.city || "",
+    //       state: data.supplier.address?.state || "",
+    //       zipCode: data.supplier.address?.zipCode || "",
+    //       country: data.supplier.address?.country || "",
+    //     },
+    //     contact: {
+    //       name: data.supplier.contact?.name || "",
+    //       email: data.supplier.contact?.email || "",
+    //       phone: data.supplier.contact?.phone || "",
+    //     },
+    //     tax: data.supplier.tax || "0",
+    //   },
+    //   shipment: {
+    //     estimatedArrival: data.shipment.estimatedArrival || "",
+    //     shippingCarrier: data.shipment.shippingCarrier || "",
+    //     trackingNumber: data.shipment.trackingNumber || "",
+    //     trackingUrl: data.shipment.trackingUrl || "",
+    //   },
+    //   products: products,
+    //   additional: {
+    //     referenceNumber: data.additional.referenceNumber || "",
+    //     noteToSupplier: data.additional.noteToSupplier || "",
+    //     tag: data.additional.tag || "",
+    //   },
+    //   cost: {
+    //     taxes_included: data.cost.taxes_included,
+    //     subtotal: data.cost.subtotal,
+    //     shipping: data.cost.shipping,
+    //     total: data.cost.total,
+    //   },
+    // };
+
     const validatedData = {
       supplier: {
-        paymentTerms: data.supplier.paymentTerms || "",
-        supplierCurrency: data.supplier.supplierCurrency || "",
+        paymentTerms: data?.supplier?.paymentTerms ?? "",
+        supplierCurrency: data?.supplier?.supplierCurrency ?? "",
         address: {
-          company: data.supplier.address?.company || "",
-          street: data.supplier.address?.street || "",
-          apartment: data.supplier.address?.apartment || "",
-          city: data.supplier.address?.city || "",
-          state: data.supplier.address?.state || "",
-          zipCode: data.supplier.address?.zipCode || "",
-          country: data.supplier.address?.country || "",
+          company: data?.supplier?.address?.company ?? "",
+          street: data?.supplier?.address?.street ?? "",
+          apartment: data?.supplier?.address?.apartment ?? "",
+          city: data?.supplier?.address?.city ?? "",
+          state: data?.supplier?.address?.state ?? "",
+          zipCode: data?.supplier?.address?.zipCode ?? "",
+          country: data?.supplier?.address?.country ?? "",
         },
         contact: {
-          name: data.supplier.contact?.name || "",
-          email: data.supplier.contact?.email || "",
-          phone: data.supplier.contact?.phone || "",
+          name: data?.supplier?.contact?.name ?? "",
+          email: data?.supplier?.contact?.email ?? "",
+          phone: data?.supplier?.contact?.phone ?? "",
         },
-        tax: data.supplier.tax || "0",
+        tax: data?.supplier?.tax ?? "0",
       },
       destination: {
         country: data.destination?.country || "United States", // Default country
@@ -87,22 +125,22 @@ export async function action({ request }) {
         },
       },
       shipment: {
-        estimatedArrival: data.shipment.estimatedArrival || "",
-        shippingCarrier: data.shipment.shippingCarrier || "",
-        trackingNumber: data.shipment.trackingNumber || "",
-        trackingUrl: data.shipment.trackingUrl || "",
+        estimatedArrival: data?.shipment?.estimatedArrival ?? "",
+        shippingCarrier: data?.shipment?.shippingCarrier ?? "",
+        trackingNumber: data?.shipment?.trackingNumber ?? "",
+        trackingUrl: data?.shipment?.trackingUrl ?? "",
       },
-      products: products,
+      products: products ?? [],
       additional: {
-        referenceNumber: data.additional.referenceNumber || "",
-        noteToSupplier: data.additional.noteToSupplier || "",
-        tag: data.additional.tag || "",
+        referenceNumber: data?.additional?.referenceNumber ?? "",
+        noteToSupplier: data?.additional?.noteToSupplier ?? "",
+        tag: data?.additional?.tag ?? "",
       },
       cost: {
-        taxes_included: data.cost.taxes_included,
-        subtotal: data.cost.subtotal,
-        shipping: data.cost.shipping,
-        total: data.cost.total,
+        taxes_included: data?.cost?.taxes_included ?? 0,
+        subtotal: data?.cost?.subtotal ?? 0,
+        shipping: data?.cost?.shipping ?? 0,
+        total: data?.cost?.total ?? 0,
       },
     };
 
@@ -153,3 +191,4 @@ export async function action({ request }) {
     );
   }
 }
+
