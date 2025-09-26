@@ -4,10 +4,9 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import SupplierDestinationCard from "./component/SupplierDestinationCard.jsx";
 import AddProductsSection from "./component/AddProductsSection.jsx";
 import ShipmentDetailsCard from "./component/ShipmentDetailsCards.jsx";
-import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server.js";
 import { useLoaderData, useNavigate } from "@remix-run/react";
-
+import { json } from "@remix-run/react";
 export async function loader({ request }) {
   const { admin } = await authenticate.admin(request);
 
@@ -41,37 +40,37 @@ export async function loader({ request }) {
     new Map(currencies.map((c) => [c.value, c])).values(),
   );
 
-  const location = await admin.graphql(`
-     query LocationsList {
-  locations(first: 10) {
-    edges {
-      node {
-        id
-        name
-        address {
-          city
-          country
-          countryCode
-          phone
-          zip
-          provinceCode
-          province
-          formatted
-          latitude
-          longitude
-        }
-        isActive
-      }
-    }
-    pageInfo {
-      hasNextPage
-      endCursor
-    }
-  }
-}
-    `);
+//   const location = await admin.graphql(`
+//      query LocationsList {
+//   locations(first: 10) {
+//     edges {
+//       node {
+//         id
+//         name
+//         address {
+//           city
+//           country
+//           countryCode
+//           phone
+//           zip
+//           provinceCode
+//           province
+//           formatted
+//           latitude
+//           longitude
+//         }
+//         isActive
+//       }
+//     }
+//     pageInfo {
+//       hasNextPage
+//       endCursor
+//     }
+//   }
+// }
+//     `);
 
-  const locationData = await location.json();
+//   const locationData = await location.json();
 
   const carriersResponse = await admin.graphql(`
   query {
@@ -100,17 +99,51 @@ export async function loader({ request }) {
   );
 
   // Now pass to Select component
+  const addressData = await admin.graphql(`
+      query LocationsList {
+        locations(first: 10) {
+          edges {
+            node {
+              id
+              name
+              address {
+                city
+                country
+                countryCode
+                phone
+                zip
+                provinceCode
+                province
+                formatted
+                latitude
+                longitude
+              }
+              isActive
+            }
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }
+    `);
+
+  const LocationAddress = await addressData.json();
 
   return json({
+    LocationAddress,
     currencies: uniqueCurrencies,
     carrierOptions: uniqueCarrierOptions,
   });
+
 }
+
 
 export default function AdditionalPage() {
   const shopify = useAppBridge();
   const navigate = useNavigate();
-  const { carrierOptions } = useLoaderData();
+  const { carrierOptions, LocationAddress } = useLoaderData();
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -303,6 +336,23 @@ export default function AdditionalPage() {
       trackingNumber: "",
       trackingUrl: "",
     },
+    destination: {
+      country: "United States",
+      address: {
+        phone: "",
+        provinceCode: "",
+        province: "",
+        formatted: [],
+        countryCode: "",
+        company: "",
+        street: "",
+        apartment: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      },
+    },
     products: [],
     additional: {
       referenceNumber: "",
@@ -316,11 +366,13 @@ export default function AdditionalPage() {
       total: "$0.00",
     },
   });
+     console.log(formData.destination, "destination")
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const handleSave = useCallback(async () => {
     if (formData.products.length === 0) {
+      console.log(formData, "formData before save");
       setError("Please add at least one product.");
       setTimeout(() => {
         setError(null);
@@ -369,7 +421,7 @@ export default function AdditionalPage() {
         },
         body: JSON.stringify(payload),
       });
-
+      console.log(payload, "payload")
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.details || "Failed to save purchase order");
@@ -381,18 +433,29 @@ export default function AdditionalPage() {
   }, [formData]);
 
   // Helper to update form data
+  // Helper to update form data
   const updateFormData = useCallback((path, value) => {
     setFormData((prev) => {
       const newData = { ...prev };
+
+      // Agar sirf ek level ka path hai (jaise "supplier" ya "shipment")
+      if (!path.includes(".")) {
+        newData[path] = value;  // Direct replace
+        return newData;
+      }
+
+      // Agar nested path hai (jaise "supplier.address.city")
       let current = newData;
       const parts = path.split(".");
       for (let i = 0; i < parts.length - 1; i++) {
         current = current[parts[i]];
       }
       current[parts[parts.length - 1]] = value;
+
       return newData;
     });
   }, []);
+
 
   // Helper to update products array
   const updateProducts = useCallback((updater) => {
@@ -430,9 +493,12 @@ export default function AdditionalPage() {
           </Banner>
         )}
         <SupplierDestinationCard
+          LocationAddress={LocationAddress}
           data={formData.supplier}
           currencies={currencies}
-          onUpdate={(value) => updateFormData("supplier", value)}
+          onUpdate={(updatedSupplier) => updateFormData("supplier", updatedSupplier)}
+          destination={formData.destination}
+        onDestinationUpdate={(updatedDestination) => updateFormData("destination", updatedDestination)}
         />
         <ShipmentDetailsCard
           carrierOptions={carrierOptions}

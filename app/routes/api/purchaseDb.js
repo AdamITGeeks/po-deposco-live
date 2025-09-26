@@ -15,7 +15,6 @@ export async function action({ request }) {
     await connectDB();
 
     const data = await request.json();
-
     // Validate cost object
     if (!data.cost || typeof data.cost !== "object") {
       throw new Error("cost must be an object");
@@ -67,6 +66,25 @@ export async function action({ request }) {
           phone: data.supplier.contact?.phone || "",
         },
         tax: data.supplier.tax || "0",
+      },
+      destination: {
+        country: data.destination?.country || "United States", // Default country
+        address: {
+          phone: data.destination?.address?.phone || "",
+          provinceCode: data.destination?.address?.provinceCode || "",
+          province: data.destination?.address?.province || "",
+          formatted: Array.isArray(data.destination?.address?.formatted)
+            ? data.destination.address.formatted
+            : data.destination?.address?.formatted ? [data.destination.address.formatted] : [],
+          countryCode: data.destination?.address?.countryCode || "",
+          company: data.destination?.address?.company || "",
+          street: data.destination?.address?.street || "",
+          apartment: data.destination?.address?.apartment || "",
+          city: data.destination?.address?.city || "",
+          state: data.destination?.address?.state || "",
+          zipCode: data.destination?.address?.zipCode || "",
+          country: data.destination?.address?.country || data.destination?.country || "United States",
+        },
       },
       shipment: {
         estimatedArrival: data.shipment.estimatedArrival || "",
@@ -135,31 +153,3 @@ export async function action({ request }) {
     );
   }
 }
-
-
-// import { json } from "@remix-run/node";
-
-// export async function action({ request }) {
-//   try {
-//     const payload = await request.json();
-
-//     const response = await fetch(
-//       "https://api.deposco.com/integration/RLL/orders/updates",
-//       {
-//         method: "POST",
-//         headers: {
-//           Authorization: "Basic cmNhbWJpYXM6RmVxZDIwMjUh",
-//           "X-Tenant-Code": "RLL",
-//           "Content-Type": "application/json",
-//           Accept: "application/json",
-//         },  
-//         body: JSON.stringify(payload),
-//       }
-//     );
-
-//     const data = await response.json();
-//     return json({ success: true, data });
-//   } catch (error) {
-//     return json({ success: false, error: error.message }, { status: 500 });
-//   }
-// }

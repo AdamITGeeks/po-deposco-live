@@ -11,22 +11,19 @@ import {
   Divider,
   Modal,
 } from "@shopify/polaris";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 
 export default function SupplierDestinationCard({
   data,
   onUpdate,
   currencies,
   isEditing = true,
+  LocationAddress,
+  destination,
+  onDestinationUpdate,
 }) {
-  console.log(data, "currencies");
-  // Payment terms state
-
-
   // Supplier currency state
-  const [supplierCurrency, setSupplierCurrency] = useState(
-    data.supplierCurrency,
-  );
+  const [supplierCurrency, setSupplierCurrency] = useState(data.supplierCurrency);
   const handleSupplierCurrencyChange = useCallback(
     (value) => {
       setSupplierCurrency(value);
@@ -45,6 +42,89 @@ export default function SupplierDestinationCard({
   const [tempAddress, setTempAddress] = useState(data.address);
   const [tempContact, setTempContact] = useState(data.contact);
   const [tempTax, setTempTax] = useState(data.tax);
+
+  // Location state from LocationAddress
+  const locations = useMemo(() => {
+    return LocationAddress?.data?.locations?.edges?.map(({ node }) => node) || [];
+  }, [LocationAddress]);
+
+  const [selectedLocation, setSelectedLocation] = useState(() => {
+    // If destination has address data, try to match to a location for edit mode
+    if (destination?.address?.formatted && destination.address.formatted.length > 0) {
+      const destFormatted = Array.isArray(destination.address.formatted)
+        ? destination.address.formatted.join(', ')
+        : destination.address.formatted;
+      const matchingLocation = locations.find((loc) => {
+        const locFormatted = Array.isArray(loc.address.formatted)
+          ? loc.address.formatted.join(', ')
+          : loc.address.formatted;
+        return locFormatted === destFormatted;
+      });
+      if (matchingLocation) return matchingLocation;
+    }
+    // No default selection for create mode
+    return null;
+  });
+
+  // Location options for Select
+  const locationOptions = useMemo(() => {
+    const options = locations.map((loc) => ({
+      label: loc.name,
+      value: loc.name,
+    }));
+    // Add default option if no locations are available
+    if (options.length === 0) {
+      options.push({
+        label: "US Location",
+        value: "US Location",
+      });
+    }
+    return options;
+  }, [locations]);
+
+  // Handle location selection
+const handleLocationChange = useCallback(
+  (value) => {
+    const selected = locations.find((loc) => loc.name === value) || {
+      name: value,
+      address: {
+        city: "",
+        country: "United States", // Default country agar location nahi mili
+        countryCode: "",
+        phone: "",
+        zip: "",
+        province: "",
+        provinceCode: "",
+        formatted: [],
+      },
+    };
+    setSelectedLocation(selected);
+
+    // Update complete destination object
+    const updatedDestination = {
+      country: selected.address?.country || "United States", // Ensure country is set
+      address: {
+        phone: selected.address?.phone || "",
+        provinceCode: selected.address?.provinceCode || "",
+        province: selected.address?.province || "",
+        formatted: Array.isArray(selected.address?.formatted)
+          ? selected.address.formatted
+          : selected.address?.formatted ? [selected.address.formatted] : [],
+        countryCode: selected.address?.countryCode || "",
+        company: selected.address?.company || "",
+        street: selected.address?.street || "",
+        apartment: selected.address?.apartment || "",
+        city: selected.address?.city || "",
+        state: selected.address?.province || "", // Map province to state if needed
+        zipCode: selected.address?.zip || "",
+        country: selected.address?.country || "",
+      },
+    };
+
+    onDestinationUpdate(updatedDestination);
+  },
+  [locations, onDestinationUpdate],
+);
 
   const toggleModal = useCallback(() => {
     if (!modalActive) {
@@ -80,25 +160,19 @@ export default function SupplierDestinationCard({
     { label: "United States", value: "United States" },
     { label: "Canada", value: "Canada" },
     { label: "India", value: "India" },
-    // Add more countries as needed
   ];
 
   const stateOptions = [
     { label: "South Carolina", value: "South Carolina" },
     { label: "California", value: "California" },
     { label: "New York", value: "New York" },
-    // Add more states as needed
   ];
 
   return (
     <Card sectioned>
       <BlockStack gap="400">
         <InlineGrid columns={2} gap="400">
-          <Box
-            style={{
-              borderRight: "1px solid #dcdcdc",
-            }}
-          >
+          <Box style={{ borderRight: "1px solid #dcdcdc" }}>
             <Text variant="bodyMd" fontWeight="bold">
               Supplier
             </Text>
@@ -113,7 +187,6 @@ export default function SupplierDestinationCard({
                 </Text>
               </BlockStack>
             )}
-
             <BlockStack inlineAlign="start">
               <Button variant="plain" onClick={toggleModal}>
                 Edit supplier
@@ -124,12 +197,18 @@ export default function SupplierDestinationCard({
             <Text variant="bodyMd" fontWeight="bold">
               Destination
             </Text>
+            <Select
+
+              options={locationOptions}
+              value={selectedLocation?.name || ""}
+              onChange={handleLocationChange}
+              disabled={!isEditing}
+              placeholder="Select a location"
+            />
             <Text fontWeight="bold" variant="bodyLg">
-              US Location
+              {selectedLocation?.name || "No location selected"}
             </Text>
-            <Text tone="subdued">
-              933 Maple Avenue, Los Angeles, California
-            </Text>
+            <Text tone="subdued">{selectedLocation?.address?.formatted?.join(', ') || ""}</Text>
           </BlockStack>
         </InlineGrid>
 
@@ -141,7 +220,7 @@ export default function SupplierDestinationCard({
             disabled={!isEditing}
             label="Supplier currency"
             options={currencies}
-            value={supplierCurrency?.toLowerCase() || ""}
+            value={supplierCurrency || ""}
             onChange={handleSupplierCurrencyChange}
           />
         </InlineGrid>
@@ -163,7 +242,7 @@ export default function SupplierDestinationCard({
             content: "Delete supplier",
             destructive: true,
             onAction: () => {
-              toggleModal(); // ✅ call the function
+              toggleModal();
               setAddress(null);
             },
             disabled: !isEditing || !address,
@@ -244,11 +323,11 @@ export default function SupplierDestinationCard({
                 disabled={!isEditing}
                 label="Phone number"
                 type="number"
-                value={tempContact?.phone.split(" ")[0]}
+                value={tempContact?.phone?.split(" ")[0] || ""}
                 onChange={(value) =>
                   handleTempContactChange(
                     "phone",
-                    `${value} ${tempContact?.phone.split(" ")[1] || ""}`,
+                    `${value} ${tempContact?.phone?.split(" ")[1] || ""}`,
                   )
                 }
               />

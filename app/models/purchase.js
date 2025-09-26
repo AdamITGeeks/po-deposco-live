@@ -15,7 +15,6 @@ const PurchaseOrderSchema = new mongoose.Schema(
     supplier: {
       paymentTerms: String,
       supplierCurrency: String,
-
       address: {
         company: String,
         street: String,
@@ -37,6 +36,26 @@ const PurchaseOrderSchema = new mongoose.Schema(
       shippingCarrier: String,
       trackingNumber: String,
       trackingUrl: String,
+    },
+    destination: {
+      country: {
+        type: String,
+        required: true,
+      },
+      address: {
+        phone: String, // Changed from Number to String
+        provinceCode: String,
+        province: String,
+        formatted: [String], // Array of strings for formatted address
+        countryCode: String,
+        company: String,
+        street: String,
+        apartment: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        country: String,
+      },
     },
     products: [
       {
@@ -62,7 +81,6 @@ const PurchaseOrderSchema = new mongoose.Schema(
       total: String,
     },
   },
-
   { timestamps: true },
 );
 
