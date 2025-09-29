@@ -350,15 +350,13 @@ export default function EditPurchaseOrderPage() {
     total: parseCost(order?.cost?.total),
   };
 
-const createdAt = new Date(order?.createdAt);
+  const createdAt = new Date(order?.createdAt);
 
-const year = createdAt.getFullYear();
-const month = String(createdAt.getMonth() + 1).padStart(2, "0"); // 0-indexed, isliye +1
-const day = String(createdAt.getDate()).padStart(2, "0");
+  const year = createdAt.getFullYear();
+  const month = String(createdAt.getMonth() + 1).padStart(2, "0"); // 0-indexed, isliye +1
+  const day = String(createdAt.getDate()).padStart(2, "0");
 
-const formattedDateCreateDate = `${year}-${month}-${day}`;
-
-console.log(formattedDateCreateDate); // "2025-09-26"
+  const formattedDateCreateDate = `${year}-${month}-${day}`;
 
   const updateAt = new Date(order?.updatedAt);
   const formattedDateUpdateDate = updateAt.toLocaleDateString("en-IN", {
@@ -367,7 +365,6 @@ console.log(formattedDateCreateDate); // "2025-09-26"
     year: "numeric",
     timeZone: "Asia/Kolkata",
   });
-  console.log(formattedDateCreateDate, "formattedDateCreateDate");
 
   const formatOrderLines = (order) => {
     return {
@@ -414,7 +411,6 @@ console.log(formattedDateCreateDate); // "2025-09-26"
       })),
     };
   };
-  console.log(formattedDateCreateDate, "formattedDateCreateDate");
 
   // ✅ Main Payload
   const deposcoPayload = {
@@ -486,7 +482,6 @@ console.log(formattedDateCreateDate); // "2025-09-26"
   };
 
   const handlepayload = async () => {
-      console.log(deposcoPayload,"deposcoPayloaddeposcoPayloaddeposcoPayloaddeposcoPayload",);
     try {
       const res = await fetch("/routes/api/order/orderDeposco", {
         method: "POST",
@@ -495,13 +490,10 @@ console.log(formattedDateCreateDate); // "2025-09-26"
       });
 
       const data = await res.json();
-      console.log("Deposco API Response:", data);
     } catch (error) {
       console.error("Unexpected error in webhook:", error.message);
     }
   };
-
-  // console.log(deposcoPayload, "deposcoPayload");
   return (
     <Page
       title={`Purchase Order - ${order.orderNumber}`}

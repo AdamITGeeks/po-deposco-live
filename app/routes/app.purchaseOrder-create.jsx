@@ -41,39 +41,7 @@ export async function loader({ request }) {
   const uniqueCurrencies = Array.from(
     new Map(currencies.map((c) => [c.value, c])).values(),
   );
-
-//   const location = await admin.graphql(`
-//      query LocationsList {
-//   locations(first: 10) {
-//     edges {
-//       node {
-//         id
-//         name
-//         address {
-//           city
-//           country
-//           countryCode
-//           phone
-//           zip
-//           provinceCode
-//           province
-//           formatted
-//           latitude
-//           longitude
-//         }
-//         isActive
-//       }
-//     }
-//     pageInfo {
-//       hasNextPage
-//       endCursor
-//     }
-//   }
-// }
-//     `);
-
-//   const locationData = await location.json();
-
+  
   const carriersResponse = await admin.graphql(`
   query {
     availableCarrierServices {
@@ -163,14 +131,12 @@ export async function loader({ request }) {
     carrierOptions: uniqueCarrierOptions,
     formattedOrders,
   });
-
 }
-
 
 export default function AdditionalPage() {
   const shopify = useAppBridge();
   const navigate = useNavigate();
-  const { carrierOptions, LocationAddress , formattedOrders } = useLoaderData();
+  const { carrierOptions, LocationAddress, formattedOrders } = useLoaderData();
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -393,13 +359,12 @@ export default function AdditionalPage() {
       total: "$0.00",
     },
   });
-     console.log(formData.destination, "destination")
+  console.log(formData.destination, "destination");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
   const handleSave = useCallback(async () => {
     if (formData.products.length === 0) {
-      console.log(formData, "formData before save");
       setError("Please add at least one product.");
       setTimeout(() => {
         setError(null);
@@ -407,7 +372,6 @@ export default function AdditionalPage() {
       return;
     }
     setError(null);
-    navigate("/app");
     setSuccess(false);
 
     // Calculate subtotal and total for cost object
@@ -448,7 +412,7 @@ export default function AdditionalPage() {
         },
         body: JSON.stringify(payload),
       });
-      console.log(payload, "payload")
+      console.log(payload, "payload");
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.details || "Failed to save purchase order");
@@ -456,7 +420,9 @@ export default function AdditionalPage() {
       setSuccess(true);
     } catch (error) {
       setError(error.message);
+      navigate("/app");
     }
+    navigate("/app");
   }, [formData]);
 
   // Helper to update form data
@@ -467,7 +433,7 @@ export default function AdditionalPage() {
 
       // Agar sirf ek level ka path hai (jaise "supplier" ya "shipment")
       if (!path.includes(".")) {
-        newData[path] = value;  // Direct replace
+        newData[path] = value; // Direct replace
         return newData;
       }
 
@@ -482,7 +448,6 @@ export default function AdditionalPage() {
       return newData;
     });
   }, []);
-
 
   // Helper to update products array
   const updateProducts = useCallback((updater) => {
@@ -524,9 +489,13 @@ export default function AdditionalPage() {
           formattedOrders={formattedOrders}
           data={formData.supplier}
           currencies={currencies}
-          onUpdate={(updatedSupplier) => updateFormData("supplier", updatedSupplier)}
+          onUpdate={(updatedSupplier) =>
+            updateFormData("supplier", updatedSupplier)
+          }
           destination={formData.destination}
-        onDestinationUpdate={(updatedDestination) => updateFormData("destination", updatedDestination)}
+          onDestinationUpdate={(updatedDestination) =>
+            updateFormData("destination", updatedDestination)
+          }
         />
         <ShipmentDetailsCard
           carrierOptions={carrierOptions}

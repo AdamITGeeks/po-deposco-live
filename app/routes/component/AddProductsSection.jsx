@@ -53,28 +53,69 @@ export default function AddProductsSection({
 
   const handleSelection = useCallback(
     ({ selection }) => {
-      const variants = selection.flatMap((product) => product.variants);
-      const clearedVariants = variants.map((variant) => ({
-        ...variant,
-        sku: variant?.sku,
-        inventoryQuantity: "",
-        cost: "",
-        tax: "0",
-        total: "0",
-      }));
+      const newItems = selection.flatMap((product) => {
+        const productImage =
+          product.images && product.images.length > 0
+            ? {
+                originalSrc: product.images[0].originalSrc,
+                altText: product.images[0].altText || product.title,
+              }
+            : null;
+
+        if (product.variants && product.variants.length > 0) {
+          return product.variants.map((variant) => {
+            // Get the first selected option value, if any
+            const variantValue =
+              variant.selectedOptions && variant.selectedOptions.length > 0
+                ? variant.selectedOptions[0].value
+                : "";
+            // Combine product title and variant value
+            const displayName = variantValue
+              ? `${product.title} - ${variantValue}`
+              : product.title;
+
+            return {
+              ...variant,
+              title: product.title,
+              displayName,
+              sku: variant.sku || "",
+              inventoryQuantity: "",
+              cost: "",
+              tax: "0",
+              total: "0",
+              image: variant.image || productImage,
+            };
+          });
+        } else {
+          return [
+            {
+              ...product,
+              displayName: product.title,
+              sku: product.sku || "",
+              inventoryQuantity: "",
+              cost: "",
+              tax: "0",
+              total: "0",
+              image: productImage,
+            },
+          ];
+        }
+      });
+
       setSelectedProducts((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
-        const newUniqueVariants = clearedVariants.filter(
-          (variant) => !existingIds.has(variant.id),
+        const newUniqueItems = newItems.filter(
+          (item) => !existingIds.has(item.id),
         );
-        return [...prev, ...newUniqueVariants];
+        return [...prev, ...newUniqueItems];
       });
+
       onProductsUpdate((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
-        const newUniqueVariants = clearedVariants.filter(
-          (variant) => !existingIds.has(variant.id),
+        const newUniqueItems = newItems.filter(
+          (item) => !existingIds.has(item.id),
         );
-        return [...prev, ...newUniqueVariants];
+        return [...prev, ...newUniqueItems];
       });
     },
     [onProductsUpdate],
@@ -271,11 +312,9 @@ export default function AddProductsSection({
                         >
                           <InlineGrid columns="6" gap="400" alignItems="center">
                             <Text fontWeight="bold">
-                              {title
-                                ? title
-                                : displayName?.length > 30
-                                  ? displayName?.slice(0, 30) + "..."
-                                  : displayName}
+                              {displayName?.length > 30
+                                ? displayName.slice(0, 30) + "..."
+                                : displayName}
                             </Text>
                             <TextField
                               disabled={true}

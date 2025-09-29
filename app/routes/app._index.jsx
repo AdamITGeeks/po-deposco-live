@@ -31,48 +31,39 @@ function OrderManagement() {
   const { mode, setMode } = useSetIndexFiltersMode();
   const pageSize = 40;
   const [orders, setOrders] = useState([]);
+
   // Fetch orders from API
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch("/routes/api/order/purchaseorder", {
-        cache: "no-store",
-      });
-      const data = await res.json();
-       console.log(data , "data")
-      if (data.success) {
-        // Transform data to match expected structure
-        const transformedOrders = data.data.map((order) => ({
-          id: order.orderId, // Use MongoDB _id as unique identifier
-          orderNumber: order.orderNumber,
-          supplier: order.supplier?.address?.company || "Unknown Supplier",
-          // destination: order.supplier?.address
-          //   ? `${order.supplier.address.city}  ${order.supplier.address.state}  ${order.supplier.address.country}`
-          //   : "Unknown Destination",
-          destination : order?.destination?.address.country,
-          status: "Draft", // Default status since not provided in JSON
-          received: "0%", // Default received status
-          total: order.cost?.total || "$0.00",
-          expectedArrival: order.shipment?.estimatedArrival
-            ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
-            : "N/A",
-        }));
-        
-        setOrders(transformedOrders);
-      } else {
-        setError(data.error || "Failed to fetch orders");
-      }
-    } catch (err) {
-      setError("Error fetching orders: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
     if (location.pathname === "/app") {
-      fetchOrders();
+      setLoading(true);
+      setError(null);
+
+      fetch(`/routes/api/order/purchaseorder`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            // Transform data to match expected structure
+            const transformedOrders = data.data.map((order) => ({
+              id: order.orderId, // Use MongoDB _id as unique identifier
+              orderNumber: order.orderNumber,
+              supplier: order.supplier?.address?.company || "Unknown Supplier",
+              destination: order?.destination?.address.country,
+              status: "Draft",
+              received: "0%",
+              total: order.cost?.total || "$0.00",
+              expectedArrival: order.shipment?.estimatedArrival
+                ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
+                : "N/A",
+            }));
+
+            setOrders(transformedOrders);
+          } else {
+            setError(data.error || "Failed to fetch orders");
+          }
+        })
+        .catch((err) => setError("Error fetching orders: " + err.message))
+        .finally(() => setLoading(false));
     }
   }, [location.pathname]);
 
@@ -134,7 +125,6 @@ function OrderManagement() {
 
   const breakpoints = useBreakpoints();
   const condensed = breakpoints.smDown;
-  console.log(paginatedOrders);
 
   const handleRowClick = useCallback(
     (id) => {
@@ -162,7 +152,7 @@ function OrderManagement() {
       <IndexTable.Row
         id={id}
         key={id}
-        selected={selectedResources.includes(id)}
+        // selected={selectedResources.includes(id)}
         position={index}
         onClick={() => {
           (setLoading(true), handleRowClick(id));
@@ -212,15 +202,6 @@ function OrderManagement() {
           <Spinner accessibilityLabel="Loading files" size="large" />
         </EmptyState>
       )}
-
-      {/* Error */}
-      {!loading && error && (
-        <Box padding="400">
-          <Text tone="critical">{error}</Text>
-          <Button onClick={fetchOrders}>Retry</Button>
-        </Box>
-      )}
-
       {/* Empty State */}
       {!loading && !error && (!orders || orders.length === 0) && (
         <EmptyState

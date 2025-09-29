@@ -17,7 +17,8 @@ export default function ShipmentDetailsCard({
   carrierOptions,
   isEditing = true,
 }) {
-  const today = new Date();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const [{ month, year }, setDate] = useState({
     month: today.getMonth(),
     year: today.getFullYear(),
@@ -91,27 +92,26 @@ export default function ShipmentDetailsCard({
     }
   }, [inputValue, validate, data, onUpdate]);
 
-const handleDateChange = useCallback(
-  (dateRange) => {
-    const d = dateRange.start;
+  const handleDateChange = useCallback(
+    (dateRange) => {
+      const d = dateRange.start;
 
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, "0"); // month 0-indexed
-    const day = String(d.getDate()).padStart(2, "0");
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0"); // month 0-indexed
+      const day = String(d.getDate()).padStart(2, "0");
 
-    const iso = `${year}-${month}-${day}`; // YYYY-MM-DD in local timezone
+      const iso = `${year}-${month}-${day}`; // YYYY-MM-DD in local timezone
 
-    setSelectedDate(d);
-    setInputValue(iso);
-    setDate({ month: d.getMonth(), year: d.getFullYear() });
-    setError("");
-    setTouched(true);
-    closePopover();
-    onUpdate({ ...data, estimatedArrival: iso });
-  },
-  [closePopover, setDate, data, onUpdate]
-);
-
+      setSelectedDate(d);
+      setInputValue(iso);
+      setDate({ month: d.getMonth(), year: d.getFullYear() });
+      setError("");
+      setTouched(true);
+      closePopover();
+      onUpdate({ ...data, estimatedArrival: iso });
+    },
+    [closePopover, setDate, data, onUpdate],
+  );
 
   const [shippingCarrier, setShippingCarrier] = useState(data.shippingCarrier);
   const handleCarrierChange = useCallback(
@@ -168,6 +168,7 @@ const handleDateChange = useCallback(
             onMonthChange={handleMonthChange}
             selected={{ start: selectedDate, end: selectedDate }}
             allowRange={false}
+            disableDatesBefore={today}
           />
         </Popover>
         {/* <Select
