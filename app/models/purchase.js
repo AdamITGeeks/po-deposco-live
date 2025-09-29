@@ -38,6 +38,7 @@ const PurchaseOrderSchema = new mongoose.Schema(
       trackingUrl: String,
     },
     destination: {
+      optionName:String,
       country: {
         type: String,
         required: true,

@@ -42,6 +42,8 @@ export async function loader({ request }) {
     new Map(currencies.map((c) => [c.value, c])).values(),
   );
   
+
+
   const carriersResponse = await admin.graphql(`
   query {
     availableCarrierServices {
@@ -330,6 +332,7 @@ export default function AdditionalPage() {
       trackingUrl: "",
     },
     destination: {
+      optionName:"US Location",
       country: "United States",
       address: {
         phone: "",
@@ -489,6 +492,7 @@ export default function AdditionalPage() {
           formattedOrders={formattedOrders}
           data={formData.supplier}
           currencies={currencies}
+           mongodestination={formData.destination}
           onUpdate={(updatedSupplier) =>
             updateFormData("supplier", updatedSupplier)
           }

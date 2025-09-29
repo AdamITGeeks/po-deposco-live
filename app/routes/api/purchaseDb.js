@@ -1,7 +1,6 @@
 import { json } from "@remix-run/node";
 import mongoose from "mongoose";
 import PurchaseOrders from "../../models/purchase";
-
 // Connect to MongoDB
 const connectDB = async () => {
   if (mongoose.connection.readyState === 1) return;
@@ -106,6 +105,7 @@ export async function action({ request }) {
         tax: data?.supplier?.tax ?? "0",
       },
       destination: {
+        optionName:data?.destination?.name,
         country: data.destination?.country || "United States", // Default country
         address: {
           phone: data.destination?.address?.phone || "",
@@ -167,6 +167,7 @@ export async function action({ request }) {
     } else {
       // Create new order
       // Get next orderId
+      
       const lastPO = await PurchaseOrders.findOne()
         .sort({ orderId: -1 })
         .lean();

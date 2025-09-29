@@ -1,27 +1,19 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "8d64d71ef8068cbf2561d4277d496650"
-name = "po-deposco-app"
-application_url = "https://dolphin-app-8o9o9.ondigitalocean.app"
+client_id = "5f1ee01f9592680ab9f08556b2d806d4"
+name = "purchase-order-deposco"
+application_url = "https://admin.shopify.com/oauth/install_custom_app?client_id=5f1ee01f9592680ab9f08556b2d806d4&no_redirect=true&signature=eyJleHBpcmVzX2F0IjoxNzU5MzIyOTg0LCJwZXJtYW5lbnRfZG9tYWluIjoidnJhc3V5LWtiLm15c2hvcGlmeS5jb20iLCJjbGllbnRfaWQiOiI1ZjFlZTAxZjk1OTI2ODBhYjlmMDg1NTZiMmQ4MDZkNCIsInB1cnBvc2UiOiJjdXN0b21fYXBwIiwibWVyY2hhbnRfb3JnYW5pemF0aW9uX2lkIjoxNjIxMjE0MTJ9--f2593eb7e252d6a141e4216d117e3caafce070f4"
 embedded = true
-
-[build]
-automatically_update_urls_on_dev = true
 
 [webhooks]
 api_version = "2025-10"
 
-  [[webhooks.subscriptions]]
-  topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
-
-  [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
-scopes = "customer_read_customers,customer_read_orders,customer_write_orders,read_assigned_fulfillment_orders,read_cart_transforms,read_customers,read_discounts,read_files,read_gift_cards,read_inventory,read_locations,read_markets,read_product_listings,read_products,read_publications,read_shipping,read_third_party_fulfillment_orders,unauthenticated_read_checkouts,unauthenticated_read_customers,unauthenticated_read_product_inventory,unauthenticated_read_product_listings,write_cart_transforms,write_checkouts,write_customers,write_draft_orders,write_files,write_merchant_managed_fulfillment_orders,write_order_edits,write_orders,write_products,write_publications,write_shipping,write_third_party_fulfillment_orders"
+scopes = "customer_read_customers,customer_read_orders,customer_write_orders,read_assigned_fulfillment_orders,read_cart_transforms,read_customers,read_discounts,read_files,read_gift_cards,read_inventory,read_locations,read_markets,read_product_listings,read_products,read_publications,read_shipping,read_third_party_fulfillment_orders,unauthenticated_read_checkouts,unauthenticated_read_customers,unauthenticated_read_product_inventory,unauthenticated_read_product_listings,write_cart_transforms,write_checkouts,write_customers,write_draft_orders,write_files,write_gift_cards,write_merchant_managed_fulfillment_orders,write_order_edits,write_orders,write_products,write_publications,write_shipping,write_third_party_fulfillment_orders"
 
 [auth]
-redirect_urls = [ "https://dolphin-app-8o9o9.ondigitalocean.app/api/auth" ]
+redirect_urls = [ "https://myapp.vrasy-kb.mysite.com/api/auth" ]
+
+[build]
+automatically_update_urls_on_dev = true

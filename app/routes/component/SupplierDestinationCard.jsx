@@ -15,6 +15,7 @@ import { useCallback, useState, useMemo } from "react";
 
 export default function SupplierDestinationCard({
   data,
+  mongodestination,
   onUpdate,
   currencies,
   isEditing = true,
@@ -22,10 +23,10 @@ export default function SupplierDestinationCard({
   destination,
   onDestinationUpdate,
 }) {
+console.log(mongodestination,"mongodestination")
+console.log(LocationAddress,"LocationAddress")
   // Supplier currency state
-  const [supplierCurrency, setSupplierCurrency] = useState(
-    data.supplierCurrency,
-  );
+  const [supplierCurrency, setSupplierCurrency] = useState(data.supplierCurrency);
   const handleSupplierCurrencyChange = useCallback(
     (value) => {
       setSupplierCurrency(value);
@@ -46,42 +47,49 @@ export default function SupplierDestinationCard({
   const [tempTax, setTempTax] = useState(data.tax);
 
   // Location state from LocationAddress
+
   const locations = useMemo(() => {
-    return (
-      LocationAddress?.data?.locations?.edges?.map(({ node }) => node) || []
-    );
+    return LocationAddress?.data?.locations?.edges?.map(({ node }) => node)  || LocationAddress?.map(({ node }) => node) || [];
   }, [LocationAddress]);
 
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    // If destination has address data, try to match to a location for edit mode
-    if (
-      destination?.address?.formatted &&
-      destination.address.formatted.length > 0
-    ) {
-      const destFormatted = Array.isArray(destination.address.formatted)
-        ? destination.address.formatted.join(", ")
-        : destination.address.formatted;
+    // If destination has address data, try to match to a location
+    if (destination?.address?.formatted && destination?.address?.formatted.length > 0) {
+      const destFormatted = Array.isArray(destination?.address?.formatted)
+        ? destination?.address?.formatted.join(', ')
+        : destination?.address?.formatted;
+
       const matchingLocation = locations.find((loc) => {
         const locFormatted = Array.isArray(loc.address.formatted)
-          ? loc.address.formatted.join(", ")
+          ? loc.address.formatted.join(', ')
           : loc.address.formatted;
         return locFormatted === destFormatted;
       });
       if (matchingLocation) return matchingLocation;
     }
-    // No default selection for create mode
+  
+
+    // Fall back to mongodestination if destination doesn't match any location
+    if (mongodestination?.address?.formatted?.length > 0) {
+      return {
+        name: mongodestination?.address?.country || 'Mongo Destination',
+        address: mongodestination.address,
+      };
+    }
+
+    // If nothing matches, return null
     return null;
   });
 
-  // Location options for Select
+
   const locationOptions = useMemo(() => {
     const options = locations.map((loc) => ({
       label: loc.name,
       value: loc.name,
     }));
-    // Add default option if no locations are available
-    if (options.length === 0) {
-      options.push({
+    // Add default if still empty
+    if (options?.length === 0) {
+      options?.push({
         label: "US Location",
         value: "US Location",
       });
@@ -109,6 +117,7 @@ export default function SupplierDestinationCard({
 
       // Update complete destination object
       const updatedDestination = {
+        optionName:selected?.name,
         country: selected.address?.country || "United States", // Ensure country is set
         address: {
           phone: selected.address?.phone || "",
@@ -116,9 +125,7 @@ export default function SupplierDestinationCard({
           province: selected.address?.province || "",
           formatted: Array.isArray(selected.address?.formatted)
             ? selected.address.formatted
-            : selected.address?.formatted
-              ? [selected.address.formatted]
-              : [],
+            : selected.address?.formatted ? [selected.address.formatted] : [],
           countryCode: selected.address?.countryCode || "",
           company: selected.address?.company || "",
           street: selected.address?.street || "",
@@ -176,6 +183,23 @@ export default function SupplierDestinationCard({
     { label: "California", value: "California" },
     { label: "New York", value: "New York" },
   ];
+function findLocationNameByFormatted(LocationAddress, mongodestination) {
+  // Mongo ke formatted address ko string banayenge for comparison
+  const mongoFormattedStr = mongodestination?.address?.formatted.join(",").toLowerCase();
+  for (const option of LocationAddress) {
+    const formatted = option?.node?.address?.formatted;
+    if (formatted) {
+      const optionFormattedStr = formatted.join(",").toLowerCase();
+
+      if (optionFormattedStr === mongoFormattedStr) {
+        return option.node.name;
+      }
+    }
+  }
+
+  return null; // Agar match nahi mila
+}
+const name = findLocationNameByFormatted(LocationAddress, mongodestination);
 
   return (
     <Card sectioned>
@@ -191,14 +215,14 @@ export default function SupplierDestinationCard({
                   {address.company}
                 </Text>
                 <Text tone="subdued">
-                  {address.street} {address.city} {address.state}{" "}
-                  {address.zipCode} {address.country}
+                  {address.street}, {address.city}, {address.state}{" "}
+                  {address.zipCode}, {address.country}
                 </Text>
               </BlockStack>
             )}
             <BlockStack inlineAlign="start">
               <Button variant="plain" onClick={toggleModal}>
-                {address ? " Edit supplier" : "Add supplier"}
+                Edit supplier
               </Button>
             </BlockStack>
           </Box>
@@ -207,18 +231,16 @@ export default function SupplierDestinationCard({
               Destination
             </Text>
             <Select
+
               options={locationOptions}
-              value={selectedLocation?.name || ""}
+              value={ name|| selectedLocation?.name}
               onChange={handleLocationChange}
               disabled={!isEditing}
-              placeholder="Select a location"
             />
             <Text fontWeight="bold" variant="bodyLg">
-              {selectedLocation?.name || "No location selected"}
+              {name ||selectedLocation?.name || "No location selected"}
             </Text>
-            <Text tone="subdued">
-              {selectedLocation?.address?.formatted?.join(", ") || ""}
-            </Text>
+            <Text tone="subdued">{ selectedLocation?.address?.formatted?.join(', ') || ""}</Text>
           </BlockStack>
         </InlineGrid>
 
@@ -230,7 +252,7 @@ export default function SupplierDestinationCard({
             disabled={!isEditing}
             label="Supplier currency"
             options={currencies}
-            value={supplierCurrency?.toUpperCase() || ""}
+            value={supplierCurrency || ""}
             onChange={handleSupplierCurrencyChange}
           />
         </InlineGrid>
@@ -268,14 +290,13 @@ export default function SupplierDestinationCard({
               onChange={(value) => handleTempAddressChange("company", value)}
               autoComplete="off"
             />
-            <TextField
+            <Select
               disabled={!isEditing}
               label="Country/Region"
+              options={countryOptions}
               value={tempAddress?.country || ""}
               onChange={(value) => handleTempAddressChange("country", value)}
-              autoComplete="off"
             />
-
             <TextField
               disabled={!isEditing}
               label="Address"
@@ -284,7 +305,14 @@ export default function SupplierDestinationCard({
               autoComplete="off"
               placeholder=""
             />
-
+            <TextField
+              disabled={!isEditing}
+              label="Apartment, suite, etc."
+              value={tempAddress?.apartment || ""}
+              onChange={(value) => handleTempAddressChange("apartment", value)}
+              autoComplete="off"
+              placeholder=""
+            />
             <InlineGrid columns={2} gap="200">
               <TextField
                 disabled={!isEditing}
@@ -293,15 +321,14 @@ export default function SupplierDestinationCard({
                 onChange={(value) => handleTempAddressChange("city", value)}
                 autoComplete="off"
               />
-              <TextField
+              <Select
                 disabled={!isEditing}
                 label="State"
+                options={stateOptions}
                 value={tempAddress?.state || ""}
                 onChange={(value) => handleTempAddressChange("state", value)}
-                autoComplete="off"
               />
             </InlineGrid>
-
             <TextField
               disabled={!isEditing}
               label="ZIP code"
