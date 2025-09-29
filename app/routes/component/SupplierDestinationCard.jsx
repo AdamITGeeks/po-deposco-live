@@ -184,8 +184,12 @@ console.log(LocationAddress,"LocationAddress")
     { label: "New York", value: "New York" },
   ];
 function findLocationNameByFormatted(LocationAddress, mongodestination) {
-  // Mongo ke formatted address ko string banayenge for comparison
-  const mongoFormattedStr = mongodestination?.address?.formatted.join(",").toLowerCase();
+  if (!LocationAddress || !Array.isArray(LocationAddress)) {
+    return null;  // Ya koi default value
+  }
+
+  const mongoFormattedStr = mongodestination?.address?.formatted?.join(",").toLowerCase() || "";
+
   for (const option of LocationAddress) {
     const formatted = option?.node?.address?.formatted;
     if (formatted) {
@@ -197,9 +201,11 @@ function findLocationNameByFormatted(LocationAddress, mongodestination) {
     }
   }
 
-  return null; // Agar match nahi mila
+  return null;
 }
-const name = findLocationNameByFormatted(LocationAddress, mongodestination);
+
+const name = LocationAddress ? findLocationNameByFormatted(LocationAddress, mongodestination) : null;
+
 
   return (
     <Card sectioned>
