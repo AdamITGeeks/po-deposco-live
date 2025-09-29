@@ -10,31 +10,27 @@ import {
   Bleed,
   Divider,
   Modal,
+  List,
+  InlineStack,
 } from "@shopify/polaris";
-import { useCallback, useState, useMemo } from "react";
+import { useCallback, useState, useMemo, useEffect } from "react";
 
 export default function SupplierDestinationCard({
   data,
-  mongodestination,
   onUpdate,
   currencies,
   isEditing = true,
   LocationAddress,
   destination,
+  mongodestination,
   onDestinationUpdate,
 }) {
-console.log(mongodestination,"mongodestination")
-console.log(LocationAddress,"LocationAddress")
   // Supplier currency state
-  const [supplierCurrency, setSupplierCurrency] = useState(data.supplierCurrency);
-  const handleSupplierCurrencyChange = useCallback(
-    (value) => {
-      setSupplierCurrency(value);
-      onUpdate({ ...data, supplierCurrency: value });
-    },
-    [data, onUpdate],
+  const [supplierCurrency, setSupplierCurrency] = useState(
+    data.supplierCurrency,
   );
-
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectModalActive, setSelectModalActive] = useState(false);
   // Address and contact state
   const [address, setAddress] = useState(data.address);
   const [contact, setContact] = useState(data.contact);
@@ -46,33 +42,96 @@ console.log(LocationAddress,"LocationAddress")
   const [tempContact, setTempContact] = useState(data.contact);
   const [tempTax, setTempTax] = useState(data.tax);
 
-  // Location state from LocationAddress
+  useEffect(() => {
+    async function fetchSuppliers() {
+      try {
+        const res = await fetch("/routes/api/order/purchaseorder"); // Adjust API path if needed
+        const result = await res.json();
+        if (result.success && Array.isArray(result.data)) {
+          // Extract supplier details from all orders
+          const supplierList = result.data
+            .map((order) => ({
+              ...order.supplier?.address,
+              contact: order.supplier?.contact,
+              tax: order.supplier?.tax,
+              supplierCurrency: order.supplier?.supplierCurrency,
+              id: order._id,
+            }))
+            .filter((s) => s.company); // Only suppliers with company name
+          setSuppliers(supplierList);
+        }
+      } catch (err) {
+        // Handle error if needed
+      }
+    }
+    fetchSuppliers();
+  }, []);
 
+  const handleSelectSupplier = useCallback(
+    (supplier) => {
+      setAddress(supplier);
+      setContact(supplier.contact);
+      setTax(supplier.tax);
+      setSupplierCurrency(supplier.supplierCurrency);
+      onUpdate({
+        ...data,
+        address: supplier,
+        contact: supplier.contact,
+        tax: supplier.tax,
+        supplierCurrency: supplier.supplierCurrency,
+      });
+      setSelectModalActive(false);
+    },
+    [onUpdate, data],
+  );
+
+  // Add supplier handler (from modal)
+  const handleAddSupplier = useCallback(() => {
+    setSelectModalActive(false);
+    setModalActive(true); // Open add/edit modal
+  }, []);
+
+  const handleSupplierCurrencyChange = useCallback(
+    (value) => {
+      setSupplierCurrency(value);
+      onUpdate({ ...data, supplierCurrency: value });
+    },
+    [data, onUpdate],
+  );
+
+  // Location state from LocationAddress
   const locations = useMemo(() => {
-    return LocationAddress?.data?.locations?.edges?.map(({ node }) => node)  || LocationAddress?.map(({ node }) => node) || [];
+    return (
+      LocationAddress?.data?.locations?.edges?.map(({ node }) => node) ||
+      LocationAddress?.map(({ node }) => node) ||
+      []
+    );
   }, [LocationAddress]);
 
   const [selectedLocation, setSelectedLocation] = useState(() => {
-    // If destination has address data, try to match to a location
-    if (destination?.address?.formatted && destination?.address?.formatted.length > 0) {
-      const destFormatted = Array.isArray(destination?.address?.formatted)
-        ? destination?.address?.formatted.join(', ')
-        : destination?.address?.formatted;
-
+    // If destination has address data, try to match to a location for edit mode
+    if (
+      destination?.address?.formatted &&
+      destination.address.formatted.length > 0
+    ) {
+      const destFormatted = Array.isArray(destination.address.formatted)
+        ? destination.address.formatted.join(", ")
+        : destination.address.formatted;
       const matchingLocation = locations.find((loc) => {
         const locFormatted = Array.isArray(loc.address.formatted)
-          ? loc.address.formatted.join(', ')
+          ? loc.address.formatted.join(", ")
           : loc.address.formatted;
         return locFormatted === destFormatted;
       });
       if (matchingLocation) return matchingLocation;
     }
-  
-
+    // No default selection for create mode
     // Fall back to mongodestination if destination doesn't match any location
+
     if (mongodestination?.address?.formatted?.length > 0) {
       return {
-        name: mongodestination?.address?.country || 'Mongo Destination',
+        name: mongodestination?.address?.country || "Mongo Destination",
+
         address: mongodestination.address,
       };
     }
@@ -81,15 +140,15 @@ console.log(LocationAddress,"LocationAddress")
     return null;
   });
 
-
+  // Location options for Select
   const locationOptions = useMemo(() => {
     const options = locations.map((loc) => ({
       label: loc.name,
       value: loc.name,
     }));
-    // Add default if still empty
-    if (options?.length === 0) {
-      options?.push({
+    // Add default option if no locations are available
+    if (options.length === 0) {
+      options.push({
         label: "US Location",
         value: "US Location",
       });
@@ -117,7 +176,8 @@ console.log(LocationAddress,"LocationAddress")
 
       // Update complete destination object
       const updatedDestination = {
-        optionName:selected?.name,
+        optionName: selected?.name,
+
         country: selected.address?.country || "United States", // Ensure country is set
         address: {
           phone: selected.address?.phone || "",
@@ -125,7 +185,9 @@ console.log(LocationAddress,"LocationAddress")
           province: selected.address?.province || "",
           formatted: Array.isArray(selected.address?.formatted)
             ? selected.address.formatted
-            : selected.address?.formatted ? [selected.address.formatted] : [],
+            : selected.address?.formatted
+              ? [selected.address.formatted]
+              : [],
           countryCode: selected.address?.countryCode || "",
           company: selected.address?.company || "",
           street: selected.address?.street || "",
@@ -169,8 +231,54 @@ console.log(LocationAddress,"LocationAddress")
       contact: tempContact,
       tax: tempTax,
     });
+    if (!suppliers.some((s) => s.company === tempAddress.company)) {
+      setSuppliers((prev) => [
+        ...prev,
+        {
+          ...tempAddress,
+          contact: tempContact,
+          tax: tempTax,
+          supplierCurrency,
+        },
+      ]);
+    }
     toggleModal();
-  }, [tempAddress, tempContact, tempTax, data, onUpdate, toggleModal]);
+  }, [
+    tempAddress,
+    tempContact,
+    tempTax,
+    suppliers,
+    data,
+    onUpdate,
+    toggleModal,
+  ]);
+
+  function findLocationNameByFormatted(LocationAddress, mongodestination) {
+    if (!LocationAddress || !Array.isArray(LocationAddress)) {
+      return null; // Ya koi default value
+    }
+
+    const mongoFormattedStr =
+      mongodestination?.address?.formatted?.join(",").toLowerCase() || "";
+
+    for (const option of LocationAddress) {
+      const formatted = option?.node?.address?.formatted;
+
+      if (formatted) {
+        const optionFormattedStr = formatted.join(",").toLowerCase();
+
+        if (optionFormattedStr === mongoFormattedStr) {
+          return option.node.name;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  const name = LocationAddress
+    ? findLocationNameByFormatted(LocationAddress, mongodestination)
+    : null;
 
   const countryOptions = [
     { label: "United States", value: "United States" },
@@ -183,23 +291,21 @@ console.log(LocationAddress,"LocationAddress")
     { label: "California", value: "California" },
     { label: "New York", value: "New York" },
   ];
-function findLocationNameByFormatted(LocationAddress, mongodestination) {
-  // Mongo ke formatted address ko string banayenge for comparison
-  const mongoFormattedStr = mongodestination?.address?.formatted.join(",").toLowerCase();
-  for (const option of LocationAddress) {
-    const formatted = option?.node?.address?.formatted;
-    if (formatted) {
-      const optionFormattedStr = formatted.join(",").toLowerCase();
 
-      if (optionFormattedStr === mongoFormattedStr) {
-        return option.node.name;
-      }
-    }
-  }
-
-  return null; // Agar match nahi mila
-}
-const name = findLocationNameByFormatted(LocationAddress, mongodestination);
+  const uniqueSuppliers = suppliers.filter((supplier, index, self) => {
+    return (
+      self.findIndex(
+        (s) =>
+          s.contact?.name === supplier.contact?.name &&
+          s.address?.street === supplier.address?.street &&
+          s.address?.apartment === supplier.address?.apartment &&
+          s.address?.city === supplier.address?.city &&
+          s.address?.state === supplier.address?.state &&
+          s.address?.zipCode === supplier.address?.zipCode &&
+          s.address?.country === supplier.address?.country,
+      ) === index
+    );
+  });
 
   return (
     <Card sectioned>
@@ -215,14 +321,18 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
                   {address.company}
                 </Text>
                 <Text tone="subdued">
-                  {address.street}, {address.city}, {address.state}{" "}
-                  {address.zipCode}, {address.country}
+                  {address.street} {address.city} {address.state}{" "}
+                  {address.zipCode} {address.country}
                 </Text>
               </BlockStack>
             )}
             <BlockStack inlineAlign="start">
-              <Button variant="plain" onClick={toggleModal}>
-                Edit supplier
+              <Button
+                disabled={!isEditing}
+                variant="plain"
+                onClick={() => setSelectModalActive(true)}
+              >
+                {address ? "Select Supplier" : "Add Supplier"}
               </Button>
             </BlockStack>
           </Box>
@@ -231,16 +341,18 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
               Destination
             </Text>
             <Select
-
               options={locationOptions}
-              value={ name|| selectedLocation?.name}
+              value={selectedLocation?.name || ""}
               onChange={handleLocationChange}
               disabled={!isEditing}
+              placeholder="Select a location"
             />
             <Text fontWeight="bold" variant="bodyLg">
-              {name ||selectedLocation?.name || "No location selected"}
+              {selectedLocation?.name || "No location selected"}
             </Text>
-            <Text tone="subdued">{ selectedLocation?.address?.formatted?.join(', ') || ""}</Text>
+            <Text tone="subdued">
+              {selectedLocation?.address?.formatted?.join(", ") || ""}
+            </Text>
           </BlockStack>
         </InlineGrid>
 
@@ -252,11 +364,61 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
             disabled={!isEditing}
             label="Supplier currency"
             options={currencies}
-            value={supplierCurrency || ""}
+            value={supplierCurrency?.toUpperCase() || ""}
             onChange={handleSupplierCurrencyChange}
           />
         </InlineGrid>
       </BlockStack>
+
+      <Modal
+        open={selectModalActive}
+        onClose={() => setSelectModalActive(false)}
+        title="Select Supplier"
+        secondaryActions={[
+          {
+            content: "Add Supplier",
+            onAction: () => {
+              handleAddSupplier();
+              setTempAddress(null);
+            },
+          },
+        ]}
+      >
+        <Modal.Section>
+          <BlockStack gap="200">
+            {uniqueSuppliers.length === 0 ? (
+              <Text>No suppliers found.</Text>
+            ) : (
+              uniqueSuppliers.map((supplier, index) => (
+                <InlineStack
+                  key={`${supplier.id}-${index}`}
+                  align="space-between"
+                >
+                  <Button
+                    onClick={() => handleSelectSupplier(supplier)}
+                    variant="tertiary"
+                  >
+                    <List type="bullet">
+                      <List.Item>
+                        {supplier?.contact?.name} {supplier.street}{" "}
+                        {supplier.state} ({supplier.country})
+                      </List.Item>
+                    </List>
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      handleSelectSupplier(supplier);
+                    }}
+                    variant="primary"
+                  >
+                    Add
+                  </Button>
+                </InlineStack>
+              ))
+            )}
+          </BlockStack>
+        </Modal.Section>
+      </Modal>
 
       {/* Edit Supplier Modal */}
       <Modal
@@ -290,13 +452,14 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
               onChange={(value) => handleTempAddressChange("company", value)}
               autoComplete="off"
             />
-            <Select
+            <TextField
               disabled={!isEditing}
               label="Country/Region"
-              options={countryOptions}
               value={tempAddress?.country || ""}
               onChange={(value) => handleTempAddressChange("country", value)}
+              autoComplete="off"
             />
+
             <TextField
               disabled={!isEditing}
               label="Address"
@@ -305,14 +468,7 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
               autoComplete="off"
               placeholder=""
             />
-            <TextField
-              disabled={!isEditing}
-              label="Apartment, suite, etc."
-              value={tempAddress?.apartment || ""}
-              onChange={(value) => handleTempAddressChange("apartment", value)}
-              autoComplete="off"
-              placeholder=""
-            />
+
             <InlineGrid columns={2} gap="200">
               <TextField
                 disabled={!isEditing}
@@ -321,14 +477,15 @@ const name = findLocationNameByFormatted(LocationAddress, mongodestination);
                 onChange={(value) => handleTempAddressChange("city", value)}
                 autoComplete="off"
               />
-              <Select
+              <TextField
                 disabled={!isEditing}
                 label="State"
-                options={stateOptions}
                 value={tempAddress?.state || ""}
                 onChange={(value) => handleTempAddressChange("state", value)}
+                autoComplete="off"
               />
             </InlineGrid>
+
             <TextField
               disabled={!isEditing}
               label="ZIP code"

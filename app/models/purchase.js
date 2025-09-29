@@ -38,7 +38,7 @@ const PurchaseOrderSchema = new mongoose.Schema(
       trackingUrl: String,
     },
     destination: {
-      optionName:String,
+      optionName: String,
       country: {
         type: String,
         required: true,
@@ -68,6 +68,10 @@ const PurchaseOrderSchema = new mongoose.Schema(
         total: Number,
         tax: Number,
         cost: Number,
+        image: {
+          originalSrc: String,
+          altText: String,
+        },
       },
     ],
     additional: {

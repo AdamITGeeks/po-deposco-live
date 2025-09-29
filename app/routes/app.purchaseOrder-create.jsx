@@ -41,8 +41,6 @@ export async function loader({ request }) {
   const uniqueCurrencies = Array.from(
     new Map(currencies.map((c) => [c.value, c])).values(),
   );
-  
-
 
   const carriersResponse = await admin.graphql(`
   query {
@@ -332,7 +330,7 @@ export default function AdditionalPage() {
       trackingUrl: "",
     },
     destination: {
-      optionName:"US Location",
+      optionName: "US Location",
       country: "United States",
       address: {
         phone: "",
@@ -362,7 +360,6 @@ export default function AdditionalPage() {
       total: "$0.00",
     },
   });
-  console.log(formData.destination, "destination");
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
@@ -415,7 +412,6 @@ export default function AdditionalPage() {
         },
         body: JSON.stringify(payload),
       });
-      console.log(payload, "payload");
       const result = await response.json();
       if (!response.ok) {
         throw new Error(result.details || "Failed to save purchase order");
@@ -492,7 +488,7 @@ export default function AdditionalPage() {
           formattedOrders={formattedOrders}
           data={formData.supplier}
           currencies={currencies}
-           mongodestination={formData.destination}
+          mongodestination={formData.destination}
           onUpdate={(updatedSupplier) =>
             updateFormData("supplier", updatedSupplier)
           }

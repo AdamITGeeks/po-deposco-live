@@ -64,12 +64,10 @@ export default function AddProductsSection({
 
         if (product.variants && product.variants.length > 0) {
           return product.variants.map((variant) => {
-            // Get the first selected option value, if any
             const variantValue =
               variant.selectedOptions && variant.selectedOptions.length > 0
                 ? variant.selectedOptions[0].value
                 : "";
-            // Combine product title and variant value
             const displayName = variantValue
               ? `${product.title} - ${variantValue}`
               : product.title;
@@ -102,9 +100,27 @@ export default function AddProductsSection({
         }
       });
 
+      const mongoVariants = selectedProducts.flatMap((product) => {
+        if (product.variants) {
+          return product.variants.map((variant) => ({
+            ...variant,
+            sku: variant.sku || "",
+            inventoryQuantity: variant.inventoryQuantity || "",
+            cost: variant.cost || "",
+            tax: variant.tax || "0",
+            total: variant.total || "0",
+            image: variant.image || null,
+            displayName: variant.displayName || product.title,
+          }));
+        }
+        return [];
+      });
+
+      const combinedItems = [...newItems, ...mongoVariants];
+
       setSelectedProducts((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
-        const newUniqueItems = newItems.filter(
+        const newUniqueItems = combinedItems.filter(
           (item) => !existingIds.has(item.id),
         );
         return [...prev, ...newUniqueItems];
@@ -112,13 +128,13 @@ export default function AddProductsSection({
 
       onProductsUpdate((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
-        const newUniqueItems = newItems.filter(
+        const newUniqueItems = combinedItems.filter(
           (item) => !existingIds.has(item.id),
         );
         return [...prev, ...newUniqueItems];
       });
     },
-    [onProductsUpdate],
+    [onProductsUpdate, selectedProducts],
   );
 
   const updateVariantField = useCallback(
@@ -314,7 +330,7 @@ export default function AddProductsSection({
                             <Text fontWeight="bold">
                               {displayName?.length > 30
                                 ? displayName.slice(0, 30) + "..."
-                                : displayName}
+                                : displayName || item.title}
                             </Text>
                             <TextField
                               disabled={true}
