@@ -63,7 +63,8 @@ export const loader = async ({ params, request }) => {
   }
 `);
 
-    const LocationAddress = await addressData.json();
+const LocationAddress = await addressData.json();
+
 
     const currencies = data.data.markets.nodes
       .map((market) => market.currencySettings?.baseCurrency)
@@ -108,7 +109,7 @@ export const loader = async ({ params, request }) => {
       order,
       currencies: uniqueCurrencies,
       carrierOptions: uniqueCarrierOptions,
-      LocationAddress: LocationAddress?.data?.locations?.edges || [],
+        LocationAddress: LocationAddress?.data?.locations?.edges || [],
     };
   } catch (err) {
     throw new Response("Internal Server Error", { status: 500 });
@@ -118,7 +119,7 @@ export const loader = async ({ params, request }) => {
 export default function EditPurchaseOrderPage() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
-  const { order, carrierOptions, LocationAddress } = useLoaderData();
+  const { order, carrierOptions, LocationAddress  } = useLoaderData();
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -308,7 +309,7 @@ export default function EditPurchaseOrderPage() {
     products: order.products,
     additional: order.additional,
     cost: order.cost,
-    destination: order.destination,
+    destination: order.destination
   });
 
   const [isEditing, setIsEditing] = useState(false); // initially read-only
@@ -565,11 +566,11 @@ export default function EditPurchaseOrderPage() {
         <SupplierDestinationCard
           isEditing={isEditing}
           currencies={currencies}
-          mongodestination={formData.destination}
+            mongodestination={formData.destination}
           data={formData.supplier}
           onUpdate={(value) => updateFormData("supplier", value)}
           disabled={!isEditing} // initially read-only
-          LocationAddress={LocationAddress}
+          LocationAddress={LocationAddress} 
         />
 
         {/* Shipment Info */}

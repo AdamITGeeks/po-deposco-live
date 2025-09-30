@@ -342,13 +342,13 @@ export default function SupplierDestinationCard({
             </Text>
             <Select
               options={locationOptions}
-              value={selectedLocation?.name || ""}
+              value={ name|| selectedLocation?.name || ""}
               onChange={handleLocationChange}
               disabled={!isEditing}
               placeholder="Select a location"
             />
             <Text fontWeight="bold" variant="bodyLg">
-              {selectedLocation?.name || "No location selected"}
+              { name ||selectedLocation?.name || "No location selected"}
             </Text>
             <Text tone="subdued">
               {selectedLocation?.address?.formatted?.join(", ") || ""}
