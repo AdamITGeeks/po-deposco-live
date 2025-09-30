@@ -32,7 +32,7 @@ export default function SupplierDestinationCard({
   const [suppliers, setSuppliers] = useState([]);
   const [selectModalActive, setSelectModalActive] = useState(false);
   // Address and contact state
-  const [address, setAddress] = useState(data.address);
+  const [address, setAddress] = useState(data.address);     
   const [contact, setContact] = useState(data.contact);
   const [tax, setTax] = useState(data.tax);
 
