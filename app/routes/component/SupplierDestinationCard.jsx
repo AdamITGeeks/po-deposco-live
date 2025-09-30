@@ -32,7 +32,7 @@ export default function SupplierDestinationCard({
   const [suppliers, setSuppliers] = useState([]);
   const [selectModalActive, setSelectModalActive] = useState(false);
   // Address and contact state
-  const [address, setAddress] = useState(data.address);     
+  const [address, setAddress] = useState(data.address);
   const [contact, setContact] = useState(data.contact);
   const [tax, setTax] = useState(data.tax);
 
@@ -307,6 +307,18 @@ export default function SupplierDestinationCard({
     );
   });
 
+  useEffect(() => {
+    if (LocationAddress && mongodestination) {
+      const matchedName = findLocationNameByFormatted(LocationAddress, mongodestination);
+      if (matchedName) {
+        const matchedLocation = locations.find((loc) => loc.name === matchedName);
+        if (matchedLocation) {
+          setSelectedLocation(matchedLocation);
+        }
+      }
+    }
+  }, [LocationAddress, mongodestination, locations]);
+
   return (
     <Card sectioned>
       <BlockStack gap="400">
@@ -342,14 +354,16 @@ export default function SupplierDestinationCard({
             </Text>
             <Select
               options={locationOptions}
-              value={ name|| selectedLocation?.name || ""}
+              value={selectedLocation?.name || ""}
               onChange={handleLocationChange}
               disabled={!isEditing}
               placeholder="Select a location"
             />
+
             <Text fontWeight="bold" variant="bodyLg">
-              { name ||selectedLocation?.name || "No location selected"}
+              {selectedLocation?.name || "No location selected"}
             </Text>
+
             <Text tone="subdued">
               {selectedLocation?.address?.formatted?.join(", ") || ""}
             </Text>
