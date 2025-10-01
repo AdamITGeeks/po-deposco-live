@@ -12,7 +12,10 @@
 //   Modal,
 //   List,
 //   InlineStack,
+//   Autocomplete,
+//   Icon,
 // } from "@shopify/polaris";
+// import { SearchIcon } from "@shopify/polaris-icons";
 // import { useCallback, useState, useMemo, useEffect } from "react";
 // import { Country, State } from "country-state-city";
 
@@ -26,8 +29,21 @@
 //   mongodestination,
 //   onDestinationUpdate,
 // }) {
+//   const deselectedAddressOptions = useMemo(
+//     () => [
+//       {
+//         value: "123 Main St, New York, NY",
+//         label: "123 Main St, New York, NY",
+//       },
+//       {
+//         value: "456 Elm St, Los Angeles, CA",
+//         label: "456 Elm St, Los Angeles, CA",
+//       },
+//       { value: "789 Oak Ave, Chicago, IL", label: "789 Oak Ave, Chicago, IL" },
+//     ],
+//     [],
+//   );
 //   // Supplier currency state
-
 //   const [countries, setCountries] = useState([]);
 //   const [states, setStates] = useState([]);
 //   const [supplierCurrency, setSupplierCurrency] = useState(
@@ -46,17 +62,53 @@
 //   const [tempContact, setTempContact] = useState(data.contact);
 //   const [tempTax, setTempTax] = useState(data.tax);
 
+//   const [addressInputValue, setAddressInputValue] = useState(
+//     tempAddress?.street || "",
+//   );
+//   const [addressOptions, setAddressOptions] = useState(
+//     deselectedAddressOptions,
+//   );
+//   const [selectedAddressOptions, setSelectedAddressOptions] = useState(
+//     tempAddress?.street ? [tempAddress.street] : [],
+//   );
+
+//   // Load countries on mount
 //   useEffect(() => {
-//     setCountries(Country.getAllCountries());
+//     const countryList = Country.getAllCountries().map((country) => ({
+//       label: country.name,
+//       value: country.name,
+//     }));
+//     setCountries(countryList);
 //   }, []);
+
+//   // Load states when country changes
+//   useEffect(() => {
+//     if (tempAddress?.country) {
+//       const country = Country.getAllCountries().find(
+//         (c) => c.name === tempAddress.country,
+//       );
+//       if (country) {
+//         const stateList = State.getStatesOfCountry(country.isoCode).map(
+//           (state) => ({
+//             label: state.name,
+//             value: state.name,
+//           }),
+//         );
+//         setStates(stateList);
+//       } else {
+//         setStates([]);
+//       }
+//     } else {
+//       setStates([]);
+//     }
+//   }, [tempAddress?.country]);
 
 //   useEffect(() => {
 //     async function fetchSuppliers() {
 //       try {
-//         const res = await fetch("/routes/api/order/purchaseorder"); // Adjust API path if needed
+//         const res = await fetch("/routes/api/order/purchaseorder");
 //         const result = await res.json();
 //         if (result.success && Array.isArray(result.data)) {
-//           // Extract supplier details from all orders
 //           const supplierList = result.data
 //             .map((order) => ({
 //               ...order.supplier?.address,
@@ -91,10 +143,9 @@
 //     [onUpdate, data],
 //   );
 
-//   // Add supplier handler (from modal)
 //   const handleAddSupplier = useCallback(() => {
 //     setSelectModalActive(false);
-//     setModalActive(true); // Open add/edit modal
+//     setModalActive(true);
 //   }, []);
 
 //   const handleSupplierCurrencyChange = useCallback(
@@ -105,7 +156,6 @@
 //     [data, onUpdate],
 //   );
 
-//   // Location state from LocationAddress
 //   const locations = useMemo(() => {
 //     return (
 //       LocationAddress?.data?.locations?.edges?.map(({ node }) => node) ||
@@ -115,7 +165,6 @@
 //   }, [LocationAddress]);
 
 //   const [selectedLocation, setSelectedLocation] = useState(() => {
-//     // If destination has address data, try to match to a location for edit mode
 //     if (
 //       destination?.address?.formatted &&
 //       destination.address.formatted.length > 0
@@ -131,18 +180,12 @@
 //       });
 //       if (matchingLocation) return matchingLocation;
 //     }
-//     // No default selection for create mode
-//     // Fall back to mongodestination if destination doesn't match any location
-
 //     if (mongodestination?.address?.formatted?.length > 0) {
 //       return {
 //         name: mongodestination?.address?.country || "Mongo Destination",
-
 //         address: mongodestination.address,
 //       };
 //     }
-
-//     // If nothing matches, return null
 //     return null;
 //   });
 
@@ -151,7 +194,6 @@
 //       label: loc.name,
 //       value: loc.name,
 //     }));
-//     // Add default option if no locations are available
 //     if (options.length === 0) {
 //       options.push({
 //         label: "US Location",
@@ -161,14 +203,13 @@
 //     return options;
 //   }, [locations]);
 
-//   // Handle location selection
 //   const handleLocationChange = useCallback(
 //     (value) => {
 //       const selected = locations.find((loc) => loc.name === value) || {
 //         name: value,
 //         address: {
 //           city: "",
-//           country: "United States", // Default country agar location nahi mili
+//           country: "United States",
 //           countryCode: "",
 //           phone: "",
 //           zip: "",
@@ -178,12 +219,9 @@
 //         },
 //       };
 //       setSelectedLocation(selected);
-
-//       // Update complete destination object
 //       const updatedDestination = {
 //         optionName: selected?.name,
-
-//         country: selected?.address?.country || "United States", // Ensure country is set
+//         country: selected?.address?.country || "United States",
 //         address: {
 //           phone: selected?.address?.phone || "",
 //           provinceCode: selected?.address?.provinceCode || "",
@@ -198,14 +236,14 @@
 //           street: selected?.address?.street || "",
 //           apartment: selected.address?.apartment || "",
 //           city: selected?.address?.city || "",
-//           state: selected?.address?.province || "", // Map province to state if needed
+//           state: selected?.address?.province || "",
 //           zipCode: selected?.address?.zip || "",
 //           country: selected?.address?.country || "",
 //         },
 //       };
-//       console.log(updatedDestination, "u[datenlkflka");
-
+//       console.log(updatedDestination);
 //       onDestinationUpdate(updatedDestination);
+//       console.log(selected?.name, "selcteeeded");
 //     },
 //     [locations, onDestinationUpdate],
 //   );
@@ -219,25 +257,12 @@
 //     setModalActive((active) => !active);
 //   }, [modalActive, address, contact, tax]);
 
-//   // const handleTempAddressChange = useCallback((field, value) => {
-//   //   setTempAddress((prev) => ({ ...prev, [field]: value }));
-//   // }, []);
-
 //   const handleTempAddressChange = useCallback((field, value) => {
 //     setTempAddress((prev) => {
 //       let updated = { ...prev, [field]: value };
-//       // If country changes, reset state and zipCode
 //       if (field === "country") {
 //         updated.state = "";
 //         updated.zipCode = "";
-//       }
-//       // If state changes, update zipCode from mapping
-//       if (field === "state") {
-//         const zip =
-//           countryStateZip[updated.country]?.states.find(
-//             (s) => s.value === value,
-//           )?.zip || "";
-//         updated.zipCode = zip;
 //       }
 //       return updated;
 //     });
@@ -268,7 +293,7 @@
 //         },
 //       ]);
 //     }
-//     console.log("tempassress", tempAddress);
+//     console.log(tempAddress);
 //     toggleModal();
 //   }, [
 //     tempAddress,
@@ -282,24 +307,19 @@
 
 //   function findLocationNameByFormatted(LocationAddress, mongodestination) {
 //     if (!LocationAddress || !Array.isArray(LocationAddress)) {
-//       return null; // Ya koi default value
+//       return null;
 //     }
-
 //     const mongoFormattedStr =
-//       mongodestination?.address?.formatted?.join(",").toLowerCase() || "";
-
+//       mongodestination?.address?.formatted?.join(",")?.toLowerCase() || "";
 //     for (const option of LocationAddress) {
 //       const formatted = option?.node?.address?.formatted;
-
 //       if (formatted) {
-//         const optionFormattedStr = formatted.join(",").toLowerCase();
-
+//         const optionFormattedStr = formatted.join(",")?.toLowerCase();
 //         if (optionFormattedStr === mongoFormattedStr) {
 //           return option.node.name;
 //         }
 //       }
 //     }
-
 //     return null;
 //   }
 
@@ -307,40 +327,8 @@
 //     ? findLocationNameByFormatted(LocationAddress, mongodestination)
 //     : null;
 
-//   const countryStateZip = {
-//     "United States": {
-//       states: [
-//         { label: "California", value: "California", zip: "90001" },
-//         { label: "New York", value: "New York", zip: "10001" },
-//         { label: "South Carolina", value: "South Carolina", zip: "29020" },
-//       ],
-//     },
-//     Canada: {
-//       states: [
-//         { label: "Ontario", value: "Ontario", zip: "K1A 0B1" },
-//         { label: "Quebec", value: "Quebec", zip: "G1A 0A2" },
-//       ],
-//     },
-//     India: {
-//       states: [
-//         { label: "Maharashtra", value: "Maharashtra", zip: "400001" },
-//         { label: "Delhi", value: "Delhi", zip: "110001" },
-//       ],
-//     },
-//   };
-
 //   const selectedCountry = tempAddress?.country || "United States";
-//   const stateOptions =
-//     countryStateZip[selectedCountry]?.states.map((s) => ({
-//       label: s.label,
-//       value: s.value,
-//     })) || [];
-
-//   const selectedState = tempAddress?.state;
-//   const zipCode =
-//     countryStateZip[selectedCountry]?.states.find(
-//       (s) => s.value === selectedState,
-//     )?.zip || "";
+//   const selectedState = tempAddress?.state || "";
 
 //   const uniqueSuppliers = suppliers.filter((supplier, index, self) => {
 //     return (
@@ -373,6 +361,53 @@
 //       }
 //     }
 //   }, [LocationAddress, mongodestination, locations]);
+
+//   const updateAddressText = useCallback(
+//     (value) => {
+//       setAddressInputValue(value);
+//       handleTempAddressChange("street", value);
+
+//       if (value === "") {
+//         setAddressOptions(deselectedAddressOptions);
+//         return;
+//       }
+
+//       const filterRegex = new RegExp(value, "i");
+//       const resultOptions = deselectedAddressOptions.filter((option) =>
+//         option.label.match(filterRegex),
+//       );
+//       setAddressOptions(resultOptions);
+//     },
+//     [deselectedAddressOptions, handleTempAddressChange],
+//   );
+
+//   const updateAddressSelection = useCallback(
+//     (selected) => {
+//       const selectedValue = selected.map((selectedItem) => {
+//         const matchedOption = addressOptions.find((option) => {
+//           return option.value.match(selectedItem);
+//         });
+//         return matchedOption && matchedOption.label;
+//       });
+
+//       setSelectedAddressOptions(selected);
+//       setAddressInputValue(selectedValue[0] || "");
+//       handleTempAddressChange("street", selectedValue[0] || "");
+//     },
+//     [addressOptions, handleTempAddressChange],
+//   );
+
+//   const addressTextField = (
+//     <Autocomplete.TextField
+//       onChange={updateAddressText}
+//       label="Address"
+//       value={addressInputValue}
+//       prefix={<Icon source={SearchIcon} tone="base" />}
+//       placeholder="Type address"
+//       autoComplete="off"
+//       disabled={!isEditing}
+//     />
+//   );
 
 //   return (
 //     <Card sectioned>
@@ -414,17 +449,14 @@
 //               disabled={!isEditing}
 //               placeholder="Select a location"
 //             />
-
 //             <Text fontWeight="bold" variant="bodyLg">
 //               {selectedLocation?.name || "No location selected"}
 //             </Text>
-
 //             <Text tone="subdued">
 //               {selectedLocation?.address?.formatted?.join(", ") || ""}
 //             </Text>
 //           </BlockStack>
 //         </InlineGrid>
-
 //         <Bleed marginInline="400">
 //           <Divider />
 //         </Bleed>
@@ -475,9 +507,7 @@
 //                     </List>
 //                   </Button>
 //                   <Button
-//                     onClick={() => {
-//                       handleSelectSupplier(supplier);
-//                     }}
+//                     onClick={() => handleSelectSupplier(supplier)}
 //                     variant="primary"
 //                   >
 //                     Add
@@ -489,7 +519,6 @@
 //         </Modal.Section>
 //       </Modal>
 
-//       {/* Edit Supplier Modal */}
 //       <Modal
 //         open={modalActive}
 //         onClose={toggleModal}
@@ -521,34 +550,28 @@
 //               onChange={(value) => handleTempAddressChange("company", value)}
 //               autoComplete="off"
 //             />
-//             {/* <TextField
-//               disabled={!isEditing}
-//               label="Country/Region"
-//               value={tempAddress?.country || ""}
-//               onChange={(value) => handleTempAddressChange("country", value)}
-//               autoComplete="off"
-//             /> */}
-
 //             <Select
 //               disabled={!isEditing}
 //               label="Country/Region"
-//               options={Object.keys(countryStateZip).map((c) => ({
-//                 label: c,
-//                 value: c,
-//               }))}
+//               options={countries}
 //               value={selectedCountry}
 //               onChange={(value) => handleTempAddressChange("country", value)}
+//               placeholder="Select a country"
 //             />
-
-//             <TextField
+//             {/* <TextField
 //               disabled={!isEditing}
 //               label="Address"
 //               value={tempAddress?.street || ""}
 //               onChange={(value) => handleTempAddressChange("street", value)}
 //               autoComplete="off"
 //               placeholder=""
+//             /> */}
+//             <Autocomplete
+//               options={addressOptions}
+//               selected={selectedAddressOptions}
+//               onSelect={updateAddressSelection}
+//               textField={addressTextField}
 //             />
-
 //             <InlineGrid columns={2} gap="200">
 //               <TextField
 //                 disabled={!isEditing}
@@ -560,16 +583,16 @@
 //               <Select
 //                 disabled={!isEditing || !selectedCountry}
 //                 label="State"
-//                 options={stateOptions}
+//                 options={states}
 //                 value={selectedState || ""}
 //                 onChange={(value) => handleTempAddressChange("state", value)}
+//                 placeholder="Select a state"
 //               />
 //             </InlineGrid>
-
 //             <TextField
 //               disabled={!isEditing}
 //               label="ZIP code"
-//               value={tempAddress?.zipCode || zipCode || ""}
+//               value={tempAddress?.zipCode || ""}
 //               onChange={(value) => handleTempAddressChange("zipCode", value)}
 //               autoComplete="off"
 //             />
@@ -622,7 +645,10 @@ import {
   Modal,
   List,
   InlineStack,
+  Autocomplete,
+  Icon,
 } from "@shopify/polaris";
+import { SearchIcon } from "@shopify/polaris-icons";
 import { useCallback, useState, useMemo, useEffect } from "react";
 import { Country, State } from "country-state-city";
 
@@ -654,6 +680,12 @@ export default function SupplierDestinationCard({
   const [tempAddress, setTempAddress] = useState(data.address);
   const [tempContact, setTempContact] = useState(data.contact);
   const [tempTax, setTempTax] = useState(data.tax);
+
+  const [addressInputValue, setAddressInputValue] = useState(
+    tempAddress?.street || "",
+  );
+  const [addressOptions, setAddressOptions] = useState([]);
+  const [selectedAddressOptions, setSelectedAddressOptions] = useState([]);
 
   // Load countries on mount
   useEffect(() => {
@@ -708,15 +740,74 @@ export default function SupplierDestinationCard({
     fetchSuppliers();
   }, []);
 
+  const uniqueSuppliers = useMemo(() => {
+    return suppliers.filter((supplier, index, self) => {
+      return (
+        index ===
+        self.findIndex(
+          (s) =>
+            s.street === supplier.street &&
+            (s.apartment || "") === (supplier.apartment || "") &&
+            s.city === supplier.city &&
+            s.state === supplier.state &&
+            s.zipCode === supplier.zipCode &&
+            s.country === supplier.country,
+        )
+      );
+    });
+  }, [suppliers]);
+
+  const addressOptionsMemo = useMemo(
+    () =>
+      uniqueSuppliers.map((supplier) => ({
+        label:
+          `${supplier.street || ""}, ${supplier.city || ""}, ${supplier.state || ""} ${supplier.zipCode || ""}, ${supplier.country || ""}`.trim(),
+        value: supplier.id,
+      })),
+    [uniqueSuppliers],
+  );
+
+  const findSupplierByAddress = useCallback(
+    (addr) => {
+      if (!addr) return null;
+      return uniqueSuppliers.find(
+        (s) =>
+          s.street === addr.street &&
+          (s.apartment || "") === (addr.apartment || "") &&
+          s.city === addr.city &&
+          s.state === addr.state &&
+          s.zipCode === addr.zipCode &&
+          s.country === addr.country,
+      );
+    },
+    [uniqueSuppliers],
+  );
+
   const handleSelectSupplier = useCallback(
     (supplier) => {
-      setAddress(supplier);
+      setAddress({
+        company: supplier.company || "",
+        street: supplier.street || "",
+        apartment: supplier.apartment || "",
+        city: supplier.city || "",
+        state: supplier.state || "",
+        zipCode: supplier.zipCode || "",
+        country: supplier.country || "",
+      });
       setContact(supplier.contact);
       setTax(supplier.tax);
       setSupplierCurrency(supplier.supplierCurrency);
       onUpdate({
         ...data,
-        address: supplier,
+        address: {
+          company: supplier.company || "",
+          street: supplier.street || "",
+          apartment: supplier.apartment || "",
+          city: supplier.city || "",
+          state: supplier.state || "",
+          zipCode: supplier.zipCode || "",
+          country: supplier.country || "",
+        },
         contact: supplier.contact,
         tax: supplier.tax,
         supplierCurrency: supplier.supplierCurrency,
@@ -836,9 +927,12 @@ export default function SupplierDestinationCard({
       setTempAddress(address);
       setTempContact(contact);
       setTempTax(tax);
+      setAddressInputValue(address?.street || "");
+      const matchingSupplier = findSupplierByAddress(address);
+      setSelectedAddressOptions(matchingSupplier ? [matchingSupplier.id] : []);
     }
     setModalActive((active) => !active);
-  }, [modalActive, address, contact, tax]);
+  }, [modalActive, address, contact, tax, findSupplierByAddress]);
 
   const handleTempAddressChange = useCallback((field, value) => {
     setTempAddress((prev) => {
@@ -865,6 +959,7 @@ export default function SupplierDestinationCard({
       contact: tempContact,
       tax: tempTax,
     });
+    const newId = `new-${Date.now()}`;
     if (!suppliers.some((s) => s.company === tempAddress.company)) {
       setSuppliers((prev) => [
         ...prev,
@@ -873,6 +968,7 @@ export default function SupplierDestinationCard({
           contact: tempContact,
           tax: tempTax,
           supplierCurrency,
+          id: newId,
         },
       ]);
     }
@@ -886,6 +982,7 @@ export default function SupplierDestinationCard({
     data,
     onUpdate,
     toggleModal,
+    supplierCurrency,
   ]);
 
   function findLocationNameByFormatted(LocationAddress, mongodestination) {
@@ -913,21 +1010,6 @@ export default function SupplierDestinationCard({
   const selectedCountry = tempAddress?.country || "United States";
   const selectedState = tempAddress?.state || "";
 
-  const uniqueSuppliers = suppliers.filter((supplier, index, self) => {
-    return (
-      self.findIndex(
-        (s) =>
-          s.contact?.name === supplier.contact?.name &&
-          s.address?.street === supplier.address?.street &&
-          s.address?.apartment === supplier.address?.apartment &&
-          s.address?.city === supplier.address?.city &&
-          s.address?.state === supplier.address?.state &&
-          s.address?.zipCode === supplier.address?.zipCode &&
-          s.address?.country === supplier.address?.country,
-      ) === index
-    );
-  });
-
   useEffect(() => {
     if (LocationAddress && mongodestination) {
       const matchedName = findLocationNameByFormatted(
@@ -944,6 +1026,71 @@ export default function SupplierDestinationCard({
       }
     }
   }, [LocationAddress, mongodestination, locations]);
+
+  const updateAddressText = useCallback(
+    (value) => {
+      setAddressInputValue(value);
+      handleTempAddressChange("street", value);
+
+      if (value === "") {
+        setAddressOptions([]);
+        return;
+      }
+
+      const filterRegex = new RegExp(value, "i");
+      const resultOptions = addressOptionsMemo.filter((option) =>
+        option.label.match(filterRegex),
+      );
+      setAddressOptions(resultOptions);
+    },
+    [addressOptionsMemo, handleTempAddressChange],
+  );
+
+  const updateAddressSelection = useCallback(
+    (selected) => {
+      if (selected.length > 0) {
+        const selectedId = selected[0];
+        const matchingSupplier = uniqueSuppliers.find(
+          (s) => s.id === selectedId,
+        );
+        if (matchingSupplier) {
+          setSelectedAddressOptions([selectedId]);
+          setAddressInputValue(matchingSupplier.street || "");
+          setTempAddress((prev) => ({
+            ...prev,
+            company: matchingSupplier?.company || prev.company || "",
+            street: matchingSupplier?.street || "",
+            apartment: matchingSupplier?.apartment || prev?.apartment || "",
+            city: matchingSupplier?.city || "",
+            state: matchingSupplier?.state || "",
+            zipCode: matchingSupplier?.zipCode || "",
+            country: matchingSupplier?.country || "",
+          }));
+        }
+      } else {
+        setSelectedAddressOptions([]);
+        setAddressInputValue("");
+        handleTempAddressChange("street", "");
+      }
+    },
+    [uniqueSuppliers, handleTempAddressChange],
+  );
+
+  useEffect(() => {
+    setAddressOptions(addressOptionsMemo);
+  }, [addressOptionsMemo]);
+
+  const addressTextField = (
+    <Autocomplete.TextField
+      onChange={updateAddressText}
+      label="Address"
+      value={addressInputValue}
+      prefix={<Icon source={SearchIcon} tone="base" />}
+      placeholder="Type address"
+      autoComplete="off"
+      disabled={!isEditing}
+    />
+  );
 
   return (
     <Card sectioned>
@@ -1026,11 +1173,8 @@ export default function SupplierDestinationCard({
             {uniqueSuppliers.length === 0 ? (
               <Text>No suppliers found.</Text>
             ) : (
-              uniqueSuppliers.map((supplier, index) => (
-                <InlineStack
-                  key={`${supplier.id}-${index}`}
-                  align="space-between"
-                >
+              uniqueSuppliers.map((supplier) => (
+                <InlineStack key={supplier.id} align="space-between">
                   <Button
                     onClick={() => handleSelectSupplier(supplier)}
                     variant="tertiary"
@@ -1094,13 +1238,11 @@ export default function SupplierDestinationCard({
               onChange={(value) => handleTempAddressChange("country", value)}
               placeholder="Select a country"
             />
-            <TextField
-              disabled={!isEditing}
-              label="Address"
-              value={tempAddress?.street || ""}
-              onChange={(value) => handleTempAddressChange("street", value)}
-              autoComplete="off"
-              placeholder=""
+            <Autocomplete
+              options={addressOptions}
+              selected={selectedAddressOptions}
+              onSelect={updateAddressSelection}
+              textField={addressTextField}
             />
             <InlineGrid columns={2} gap="200">
               <TextField
