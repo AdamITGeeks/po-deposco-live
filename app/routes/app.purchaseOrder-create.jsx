@@ -425,14 +425,12 @@ export default function AdditionalPage() {
   }, [formData]);
 
   // Helper to update form data
-  // Helper to update form data
   const updateFormData = useCallback((path, value) => {
     setFormData((prev) => {
       const newData = { ...prev };
 
-      // Agar sirf ek level ka path hai (jaise "supplier" ya "shipment")
       if (!path.includes(".")) {
-        newData[path] = value; // Direct replace
+        newData[path] = value; 
         return newData;
       }
 

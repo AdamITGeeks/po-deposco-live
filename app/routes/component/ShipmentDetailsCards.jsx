@@ -1,7 +1,6 @@
 import {
   Card,
   TextField,
-  Select,
   DatePicker,
   Popover,
   Icon,
@@ -14,7 +13,6 @@ import { CalendarIcon } from "@shopify/polaris-icons";
 export default function ShipmentDetailsCard({
   data,
   onUpdate,
-  carrierOptions,
   isEditing = true,
 }) {
   const now = new Date();

@@ -11,9 +11,7 @@ import {
   Page,
   Spinner,
   Icon,
-  InlineStack,
   EmptyState,
-  BlockStack,
 } from "@shopify/polaris";
 import { OrderIcon } from "@shopify/polaris-icons";
 import { useState, useCallback, useMemo, useEffect } from "react";
@@ -43,9 +41,8 @@ function OrderManagement() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
-            // Transform data to match expected structure
             const transformedOrders = data.data.map((order) => ({
-              id: order.orderId, // Use MongoDB _id as unique identifier
+              id: order.orderId, 
               orderNumber: order.orderNumber,
               supplier: order.supplier?.address?.company || "Unknown Supplier",
               destination: order?.destination?.address.country,

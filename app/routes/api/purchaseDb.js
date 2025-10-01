@@ -130,8 +130,7 @@ export async function action({ request }) {
         message: "Order updated successfully",
       });
     } else {
-      // Create new order
-      // Get next orderId
+   
 
       const lastPO = await PurchaseOrders.findOne()
         .sort({ orderId: -1 })

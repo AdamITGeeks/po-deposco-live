@@ -44,10 +44,10 @@ const PurchaseOrderSchema = new mongoose.Schema(
         required: true,
       },
       address: {
-        phone: String, // Changed from Number to String
+        phone: String, 
         provinceCode: String,
         province: String,
-        formatted: [String], // Array of strings for formatted address
+        formatted: [String], 
         countryCode: String,
         company: String,
         street: String,

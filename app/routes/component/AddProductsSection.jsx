@@ -425,7 +425,7 @@ export default function AddProductsSection({
         </Bleed>
         <Box paddingBlockStart={400}>
           <Text variant="bodyMd">
-            {selectedProducts.length} variants on purchase order
+            {selectedProducts.length} item on purchase order
           </Text>
         </Box>
       </Card>

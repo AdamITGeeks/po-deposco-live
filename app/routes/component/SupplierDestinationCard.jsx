@@ -53,7 +53,7 @@ export default function SupplierDestinationCard({
   );
   const [addressOptions, setAddressOptions] = useState([]);
   const [selectedAddressOptions, setSelectedAddressOptions] = useState([]);
-
+  const [editingSupplierId, setEditingSupplierId] = useState(null);
   // Load countries on mount
   useEffect(() => {
     const countryList = Country.getAllCountries().map((country) => ({
@@ -282,9 +282,7 @@ export default function SupplierDestinationCard({
           country: selected?.address?.country || "",
         },
       };
-      console.log(updatedDestination);
       onDestinationUpdate(updatedDestination);
-      console.log(selected?.name, "selcteeeded");
     },
     [locations, onDestinationUpdate],
   );
@@ -316,6 +314,42 @@ export default function SupplierDestinationCard({
     setTempContact((prev) => ({ ...prev, [field]: value }));
   }, []);
 
+  // const handleSave = useCallback(() => {
+  //   setAddress(tempAddress);
+  //   setContact(tempContact);
+  //   setTax(tempTax);
+  //   onUpdate({
+  //     ...data,
+  //     address: tempAddress,
+  //     contact: tempContact,
+  //     tax: tempTax,
+  //   });
+  //   const newId = `new-${Date.now()}`;
+  //   if (!suppliers.some((s) => s.company === tempAddress.company)) {
+  //     setSuppliers((prev) => [
+  //       ...prev,
+  //       {
+  //         ...tempAddress,
+  //         contact: tempContact,
+  //         tax: tempTax,
+  //         supplierCurrency,
+  //         id: newId,
+  //       },
+  //     ]);
+  //   }
+  //   console.log(tempAddress);
+  //   toggleModal();
+  // }, [
+  //   tempAddress,
+  //   tempContact,
+  //   tempTax,
+  //   suppliers,
+  //   data,
+  //   onUpdate,
+  //   toggleModal,
+  //   supplierCurrency,
+  // ]);
+
   const handleSave = useCallback(() => {
     setAddress(tempAddress);
     setContact(tempContact);
@@ -326,21 +360,48 @@ export default function SupplierDestinationCard({
       contact: tempContact,
       tax: tempTax,
     });
-    const newId = `new-${Date.now()}`;
-    if (!suppliers.some((s) => s.company === tempAddress.company)) {
-      setSuppliers((prev) => [
-        ...prev,
-        {
-          ...tempAddress,
-          contact: tempContact,
-          tax: tempTax,
-          supplierCurrency,
-          id: newId,
-        },
-      ]);
+
+    // Update suppliers list
+    if (editingSupplierId) {
+      // Editing existing: Update the matching supplier by ID
+      setSuppliers((prev) =>
+        prev.map((s) =>
+          s.id === editingSupplierId
+            ? {
+                ...s,
+                company: tempAddress.company || "",
+                street: tempAddress.street || "",
+                apartment: tempAddress.apartment || "",
+                city: tempAddress.city || "",
+                state: tempAddress.state || "",
+                zipCode: tempAddress.zipCode || "",
+                country: tempAddress.country || "",
+                contact: tempContact,
+                tax: tempTax,
+                supplierCurrency, // Include current currency if changed separately
+              }
+            : s,
+        ),
+      );
+      setEditingSupplierId(null);
+    } else {
+      // New supplier: Add if company doesn't exist (your existing logic)
+      const newId = `new-${Date.now()}`;
+      if (!suppliers.some((s) => s.company === tempAddress.company)) {
+        setSuppliers((prev) => [
+          ...prev,
+          {
+            ...tempAddress,
+            contact: tempContact,
+            tax: tempTax,
+            supplierCurrency,
+            id: newId,
+          },
+        ]);
+      }
     }
-    console.log(tempAddress);
-    toggleModal();
+
+    setModalActive(false); // Close modal directly (instead of toggleModal)
   }, [
     tempAddress,
     tempContact,
@@ -348,7 +409,7 @@ export default function SupplierDestinationCard({
     suppliers,
     data,
     onUpdate,
-    toggleModal,
+    editingSupplierId,
     supplierCurrency,
   ]);
 
@@ -369,10 +430,6 @@ export default function SupplierDestinationCard({
     }
     return null;
   }
-
-  const name = LocationAddress
-    ? findLocationNameByFormatted(LocationAddress, mongodestination)
-    : null;
 
   const selectedCountry = tempAddress?.country || "";
   const selectedState = tempAddress?.state || "";
@@ -459,6 +516,10 @@ export default function SupplierDestinationCard({
     />
   );
 
+  const currentSupplier = useMemo(
+    () => findSupplierByAddress(address),
+    [address, findSupplierByAddress],
+  );
   return (
     <Card sectioned>
       <BlockStack gap="400">
@@ -535,7 +596,7 @@ export default function SupplierDestinationCard({
           },
         ]}
       >
-        <Modal.Section>
+        {/* <Modal.Section>
           <BlockStack gap="200">
             {uniqueSuppliers.length === 0 ? (
               <Text>No suppliers found.</Text>
@@ -561,6 +622,67 @@ export default function SupplierDestinationCard({
                   </Button>
                 </InlineStack>
               ))
+            )}
+          </BlockStack>
+        </Modal.Section> */}
+
+        <Modal.Section>
+          <BlockStack gap="200">
+            {uniqueSuppliers.length === 0 ? (
+              <Text>No suppliers found.</Text>
+            ) : (
+              uniqueSuppliers.map((supplier) => {
+                const isCurrent =
+                  currentSupplier && supplier.id === currentSupplier.id;
+                return (
+                  <InlineStack key={supplier.id} align="space-between">
+                    <Button
+                      onClick={() =>
+                        !isCurrent && handleSelectSupplier(supplier)
+                      } // Disable re-select for current
+                      variant="tertiary"
+                      disabled={isCurrent} // Optional: Gray out for current to indicate it's active
+                    >
+                      <List type="bullet">
+                        <List.Item>
+                          {supplier?.contact?.name} {supplier.street}{" "}
+                          {supplier.state} ({supplier.country})
+                        </List.Item>
+                      </List>
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        if (isCurrent) {
+                          // Edit current: Pre-fill temp states and open edit modal
+                          setTempAddress({
+                            company: supplier.company || "",
+                            street: supplier.street || "",
+                            apartment: supplier.apartment || "",
+                            city: supplier.city || "",
+                            state: supplier.state || "",
+                            zipCode: supplier.zipCode || "",
+                            country: supplier.country || "",
+                          });
+                          setTempContact(supplier.contact || {});
+                          setTempTax(supplier.tax || {});
+                          setAddressInputValue(supplier.street || ""); // For autocomplete
+                          setSelectedAddressOptions([supplier.id]);
+                          setEditingSupplierId(supplier.id);
+                          setSelectModalActive(false);
+                          setModalActive(true);
+                        } else {
+                          // Add/select non-current
+                          handleSelectSupplier(supplier);
+                        }
+                      }}
+                      size="slim"
+                      variant={isCurrent ? "secondary" : "primary"}
+                    >
+                      {isCurrent ? "Edit" : "Add"}
+                    </Button>
+                  </InlineStack>
+                );
+              })
             )}
           </BlockStack>
         </Modal.Section>
