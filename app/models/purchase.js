@@ -85,6 +85,7 @@ const PurchaseOrderSchema = new mongoose.Schema(
       shipping: String,
       total: String,
     },
+
   },
   { timestamps: true },
 );

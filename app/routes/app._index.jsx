@@ -18,7 +18,7 @@ import {
 import { OrderIcon } from "@shopify/polaris-icons";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { orderStatus } from "./app.purchase-order.$id";
+import orderStatus from "./app.purchase-order.$id";
 
 function OrderManagement() {
   const navigate = useNavigate();
@@ -34,7 +34,6 @@ function OrderManagement() {
   const [orders, setOrders] = useState([]);
 
   // Fetch orders from API
-
   useEffect(() => {
     if (location.pathname === "/app") {
       setLoading(true);
@@ -57,7 +56,6 @@ function OrderManagement() {
                 ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
                 : "N/A",
             }));
-
             setOrders(transformedOrders);
           } else {
             setError(data.error || "Failed to fetch orders");
@@ -173,11 +171,11 @@ function OrderManagement() {
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Badge
-            tone={orderStatus ? "success" : "warning"}
+            tone={orderStatus === "Ordered" ? "success" : "warning"}
             progress="incomplete"
           >
             <Text variant="headingXs" as="h5">
-              {orderStatus || status}
+              {orderStatus === "Ordered" ? orderStatus : status}
             </Text>
           </Badge>
         </IndexTable.Cell>

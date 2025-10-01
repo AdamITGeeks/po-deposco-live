@@ -1,7 +1,7 @@
 import { Page, BlockStack, Badge, Button, Banner } from "@shopify/polaris";
 import { useCallback, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { data, useLoaderData, useNavigate } from "@remix-run/react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
 import PurchaseOrder from "../models/purchase";
 import SupplierDestinationCard from "./component/SupplierDestinationCard.jsx";
 import AddProductsSection from "./component/AddProductsSection.jsx";
