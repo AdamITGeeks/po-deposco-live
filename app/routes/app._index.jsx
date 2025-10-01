@@ -18,6 +18,7 @@ import {
 import { OrderIcon } from "@shopify/polaris-icons";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { orderStatus } from "./app.purchase-order.$id";
 
 function OrderManagement() {
   const navigate = useNavigate();
@@ -171,9 +172,12 @@ function OrderManagement() {
           <Text>{destination}</Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Badge tone="warning" progress="incomplete">
+          <Badge
+            tone={orderStatus ? "success" : "warning"}
+            progress="incomplete"
+          >
             <Text variant="headingXs" as="h5">
-              {status}
+              {orderStatus || status}
             </Text>
           </Badge>
         </IndexTable.Cell>

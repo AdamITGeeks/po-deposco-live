@@ -1,7 +1,7 @@
 import { Page, BlockStack, Badge, Button, Banner } from "@shopify/polaris";
 import { useCallback, useState } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { useLoaderData, useNavigate } from "@remix-run/react";
+import { data, useLoaderData, useNavigate } from "@remix-run/react";
 import PurchaseOrder from "../models/purchase";
 import SupplierDestinationCard from "./component/SupplierDestinationCard.jsx";
 import AddProductsSection from "./component/AddProductsSection.jsx";
@@ -119,6 +119,7 @@ export default function EditPurchaseOrderPage() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
   const { order, carrierOptions, LocationAddress } = useLoaderData();
+  const [orderStatus, setOrderStatus] = useState(order?.status || "Draft");
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -450,7 +451,7 @@ export default function EditPurchaseOrderPage() {
     order: [
       {
         businessUnit: "FIREQUOCF_OCF",
-        number: `${prefix}_${number}0000`,
+        number: `${prefix}_${number}`,
         type: "Purchase Order",
         status: "New",
         customerOrderNumber: `#${number}`,
@@ -473,31 +474,34 @@ export default function EditPurchaseOrderPage() {
         },
         facility: "OCF",
         shipToAddress: {
-          attention: order?.supplier?.contact?.name || "Unknown",
-          addressLine1:
-            order?.destination?.address?.formatted?.[2] || "Unknown Street",
-          city: order?.destination?.address?.city || "Unknown City",
-          stateProvinceCode: order?.destination?.address?.state || "XX",
-          postalCode: order?.destination?.address?.zipCode || "00000",
-          countryCode: order?.destination?.address?.countryCode || "US",
-          phone: order?.supplier?.contact?.phone || "0000000000",
-          email: order?.supplier?.contact?.email || "unknown@example.com",
-          name: order?.supplier?.contact?.name || "Default Name",
+          attention: order?.supplier?.contact?.name || "",
+          addressLine1: order?.destination?.address?.formatted?.[0] || "",
+          city: order?.destination?.address?.city || "",
+          stateProvinceCode: order?.destination?.address?.state || "",
+          postalCode: order?.destination?.address?.zipCode || "",
+          countryCode: order?.destination?.address?.countryCode || "",
+          phone: order?.supplier?.contact?.phone || "",
+          email: order?.supplier?.contact?.email || "",
+          name: order?.supplier?.contact?.name || "",
         },
         billToAddress: {
-          attention: order?.supplier?.contact?.name || "Unknown",
-          addressLine1:
-            order?.destination?.address?.formatted?.[2] || "Unknown Street",
-          city: order?.destination?.address?.city || "Unknown City",
-          stateProvinceCode: order?.destination?.address?.state || "XX",
-          postalCode: order?.destination?.address?.zipCode || "00000",
-          countryCode: order?.destination?.address?.countryCode || "US",
-          phone: order?.supplier?.contact?.phone || "0000000000",
-          email: order?.supplier?.contact?.email || "unknown@example.com",
-          name: order?.supplier?.contact?.name || "Default Name",
+          attention: order?.supplier?.contact?.name || "",
+          addressLine1: order?.destination?.address?.formatted?.[2] || "",
+          city: order?.destination?.address?.city || "",
+          stateProvinceCode: order?.destination?.address?.state || "",
+          postalCode: order?.destination?.address?.zipCode || "",
+          countryCode: order?.destination?.address?.countryCode || "",
+          phone: order?.supplier?.contact?.phone || "",
+          email: order?.supplier?.contact?.email || "",
+          name: order?.supplier?.address?.company || "",
         },
         notes: {
-          note: [order?.additional?.noteToSupplier || "No notes"],
+          note: [
+            {
+              title: "Shopify Order Note",
+              body: order?.additional?.noteToSupplier || "",
+            },
+          ],
         },
         customFields: {
           customField: [
@@ -523,6 +527,9 @@ export default function EditPurchaseOrderPage() {
       });
 
       const data = await res.json();
+      if (res.ok && data.success) {
+        setOrderStatus("Ordered");
+      }
     } catch (error) {
       console.error("Unexpected error in webhook:", error.message);
     }
@@ -532,8 +539,20 @@ export default function EditPurchaseOrderPage() {
       title={`Purchase Order - ${order.orderNumber}`}
       backAction={{ url: "/app" }}
       titleMetadata={
-        <Badge tone={isEditing ? "attention" : "warning"}>
-          {isEditing ? "Editing" : "Draft"}
+        <Badge
+          tone={
+            orderStatus === "Ordered"
+              ? "success"
+              : isEditing
+                ? "attention"
+                : "warning"
+          }
+        >
+          {orderStatus === "Ordered"
+            ? "Ordered"
+            : isEditing
+              ? "Editing"
+              : "Draft"}
         </Badge>
       }
       secondaryActions={
