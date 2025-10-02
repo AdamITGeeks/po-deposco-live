@@ -28,7 +28,7 @@ export default function SupplierDestinationCard({
   destination,
   mongodestination,
   onDestinationUpdate,
-}) {
+}) {  
   // Supplier currency state
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
@@ -229,7 +229,6 @@ export default function SupplierDestinationCard({
     }
     return null;
   });
-
   const locationOptions = useMemo(() => {
     const options = locations.map((loc) => ({
       label: loc.name,
@@ -645,7 +644,7 @@ export default function SupplierDestinationCard({
                     >
                       <List type="bullet">
                         <List.Item>
-                          {supplier?.contact?.name} {supplier.street}{" "}
+                          {supplier?.company} {supplier.street}{" "}
                           {supplier.state} ({supplier.country})
                         </List.Item>
                       </List>

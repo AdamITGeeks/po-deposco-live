@@ -426,12 +426,6 @@ export default function EditPurchaseOrderPage() {
         // taxCost: 0.0,
         // unitCost: item.price || 0.0,
         productCode: item?.sku,
-        createdDateTime: formattedDateCreateDate,
-        updatedDateTime: formattedDateUpdateDate,
-        placedDate: formattedDateCreateDate,
-        plannedShipDate: formattedDateCreateDate,
-        plannedArrivalDate: formattedDateCreateDate,
-        actualArrivalDate: formattedDateCreateDate,
         customFields: {
           customField: [
             { name: "field1Name", value: "field1Value", type: "String" },
@@ -439,7 +433,14 @@ export default function EditPurchaseOrderPage() {
             { name: "field3Name", value: "field3Value", type: "Double" },
           ],
         },
-        notes: null,
+        notes: {
+          note: [
+            {
+              title: "Shopify Order Note",
+              body: order?.additional?.noteToSupplier || "",
+            },
+          ],
+        },
         customMappings: null,
         orderDiscountSubtotal: 0.0,
       })),
@@ -451,11 +452,9 @@ export default function EditPurchaseOrderPage() {
     order: [
       {
         businessUnit: "FIREQUOCF_OCF",
-        number: `${prefix}_${number}`,
+        number: `${prefix}${number}`,
         type: "Purchase Order",
         status: "New",
-        customerOrderNumber: `#${number}`,
-        orderSource: "shopify",
         // ✅ use normalized cost values
         cost: {
           subtotal: `$${normalizedCost.subtotal || "100"}`,
@@ -472,28 +471,9 @@ export default function EditPurchaseOrderPage() {
           termsType: "Prepaid",
           billToAddress: null,
         },
-        facility: "OCF",
+        shipTO: "OCF",
         shipToAddress: {
-          attention: order?.supplier?.contact?.name || "",
-          addressLine1: order?.destination?.address?.formatted?.[0] || "",
-          city: order?.destination?.address?.city || "",
-          stateProvinceCode: order?.destination?.address?.state || "",
-          postalCode: order?.destination?.address?.zipCode || "",
-          countryCode: order?.destination?.address?.countryCode || "",
-          phone: order?.supplier?.contact?.phone || "",
-          email: order?.supplier?.contact?.email || "",
-          name: order?.supplier?.contact?.name || "",
-        },
-        billToAddress: {
-          attention: order?.supplier?.contact?.name || "",
-          addressLine1: order?.destination?.address?.formatted?.[2] || "",
-          city: order?.destination?.address?.city || "",
-          stateProvinceCode: order?.destination?.address?.state || "",
-          postalCode: order?.destination?.address?.zipCode || "",
-          countryCode: order?.destination?.address?.countryCode || "",
-          phone: order?.supplier?.contact?.phone || "",
-          email: order?.supplier?.contact?.email || "",
-          name: order?.supplier?.address?.company || "",
+          name: "OCF",
         },
         notes: {
           note: [
@@ -503,16 +483,9 @@ export default function EditPurchaseOrderPage() {
             },
           ],
         },
-        customFields: {
-          customField: [
-            { name: "field1Name", value: "field1Value", type: "String" },
-            { name: "field2Name", value: "field2Value", type: "Integer" },
-            { name: "field3Name", value: "field3Value", type: "Double" },
-          ],
-        },
+
         placedDate: formattedDateCreateDate,
         plannedArrivalDate: order?.shipment?.estimatedArrival,
-        actualArrivalDate: order?.shipment?.estimatedArrival,
         orderLines: formatOrderLines(order),
       },
     ],
@@ -555,15 +528,20 @@ export default function EditPurchaseOrderPage() {
               : "Draft"}
         </Badge>
       }
-      secondaryActions={
-        isEditing ? (
-          <Button onClick={() => setIsEditing(false)}>Cancel</Button>
-        ) : (
-          <Button variant="secondary" onClick={handlepayload}>
-            Mark as ordered
-          </Button>
-        )
-      }
+      secondaryActions={[
+        isEditing
+          ? {
+              content: "Cancel",
+              onAction: () => setIsEditing(false),
+            }
+          : orderStatus !== "Ordered"
+            ? {
+                content: "Mark as ordered",
+                onAction: handlepayload,
+                variant: "secondary",
+              }
+            : null,
+      ].filter(Boolean)}
       primaryAction={
         isEditing ? (
           <Button variant="primary" onClick={handleSave}>

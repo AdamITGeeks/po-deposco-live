@@ -42,11 +42,12 @@ function OrderManagement() {
         .then((data) => {
           if (data.success) {
             const transformedOrders = data.data.map((order) => ({
-              id: order.orderId, 
+              id: order.orderId,
               orderNumber: order.orderNumber,
               supplier: order.supplier?.address?.company || "Unknown Supplier",
               destination: order?.destination?.address.country,
-              status: "Draft",
+              optionName: order?.destination?.optionName,
+              status: order?.status,
               received: "0%",
               total: order.cost?.total || "$0.00",
               expectedArrival: order.shipment?.estimatedArrival
@@ -142,6 +143,7 @@ function OrderManagement() {
         received,
         total,
         expectedArrival,
+        optionName,
       },
       index,
     ) => (
@@ -164,15 +166,15 @@ function OrderManagement() {
           <Text>{supplier}</Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
-          <Text>{destination}</Text>
+          <Text>{optionName}</Text>
         </IndexTable.Cell>
         <IndexTable.Cell>
           <Badge
-            tone={orderStatus === "Ordered" ? "success" : "warning"}
+            tone={status === "Ordered" ? "success" : "warning"}
             progress="incomplete"
           >
             <Text variant="headingXs" as="h5">
-              {orderStatus === "Ordered" ? orderStatus : status}
+              {status}
             </Text>
           </Badge>
         </IndexTable.Cell>

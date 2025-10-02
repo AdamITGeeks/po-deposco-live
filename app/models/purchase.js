@@ -31,6 +31,11 @@ const PurchaseOrderSchema = new mongoose.Schema(
       },
       tax: String,
     },
+    status: {
+      type: String,
+      enum: ["draft", "ordered"],
+      default: "draft",
+    },
     shipment: {
       estimatedArrival: String,
       shippingCarrier: String,
@@ -44,10 +49,10 @@ const PurchaseOrderSchema = new mongoose.Schema(
         required: true,
       },
       address: {
-        phone: String, 
+        phone: String,
         provinceCode: String,
         province: String,
-        formatted: [String], 
+        formatted: [String],
         countryCode: String,
         company: String,
         street: String,
@@ -85,7 +90,6 @@ const PurchaseOrderSchema = new mongoose.Schema(
       shipping: String,
       total: String,
     },
-
   },
   { timestamps: true },
 );

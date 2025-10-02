@@ -65,7 +65,7 @@ export async function action({ request }) {
         tax: data?.supplier?.tax ?? "0",
       },
       destination: {
-        optionName: data?.destination?.name,
+        optionName: data?.destination?.optionName,
         country: data.destination?.country || "United States", // Default country
         address: {
           phone: data.destination?.address?.phone || "",
