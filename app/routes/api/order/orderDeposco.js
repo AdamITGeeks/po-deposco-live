@@ -8,6 +8,7 @@ export async function action({ request }) {
   console.log(payload," console.log(payload)")
   console.log(payload?.order?.[0]?.number,"paylodnumber")
   console.log(payload?.order?.[0]?.number?.replace("PO_", ""),"paylodnumber")
+  const numberId = payload?.order?.[0]?.number?.replace("PO_", "") ;
     const response = await fetch(
       "https://api.deposco.com/integration/RLL/orders/updates",
       {
@@ -28,7 +29,7 @@ export async function action({ request }) {
       // ✅ Agar API response success aata hai
       if (payload?.order?.[0]?.number?.replace("PO_", "")) {
         await PurchaseOrder.findOneAndUpdate(
-          { orderId: payload?.order?.[0]?.number?.replace("PO_", "") },   // jo order bheja tha
+          { orderId: Number(numberId)},   // jo order bheja tha
           { status: "Ordered" },          // status update
           { new: true }
         );
