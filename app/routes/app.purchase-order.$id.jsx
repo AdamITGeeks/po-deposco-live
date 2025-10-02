@@ -528,30 +528,34 @@ export default function EditPurchaseOrderPage() {
               : "Draft"}
         </Badge>
       }
-      secondaryActions={[
-        isEditing
-          ? {
-              content: "Cancel",
-              onAction: () => setIsEditing(false),
-            }
-          : orderStatus !== "Ordered"
-            ? {
-                content: "Mark as ordered",
-                onAction: handlepayload,
-                variant: "secondary",
-              }
-            : null,
-      ].filter(Boolean)}
+      secondaryActions={
+        orderStatus !== "Ordered"
+          ? [
+              isEditing
+                ? {
+                    content: "Cancel",
+                    onAction: () => setIsEditing(false),
+                  }
+                : {
+                    content: "Mark as ordered",
+                    onAction: handlepayload,
+                    variant: "secondary",
+                  },
+            ]
+          : undefined
+      }
       primaryAction={
-        isEditing ? (
-          <Button variant="primary" onClick={handleSave}>
-            Save Changes
-          </Button>
-        ) : (
-          <Button variant="primary" onClick={() => setIsEditing(true)}>
-            Edit Order
-          </Button>
-        )
+        orderStatus !== "Ordered" ? (
+          isEditing ? (
+            <Button variant="primary" onClick={handleSave}>
+              Save Changes
+            </Button>
+          ) : (
+            <Button variant="primary" onClick={() => setIsEditing(true)}>
+              Edit Order
+            </Button>
+          )
+        ) : undefined
       }
     >
       <BlockStack gap={300}>
