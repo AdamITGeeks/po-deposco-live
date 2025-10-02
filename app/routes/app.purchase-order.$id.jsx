@@ -471,7 +471,7 @@ export default function EditPurchaseOrderPage() {
           termsType: "Prepaid",
           billToAddress: null,
         },
-        shipTO: "OCF",
+        shipTo: "OCF",
         shipToAddress: {
           name: "OCF",
         },
