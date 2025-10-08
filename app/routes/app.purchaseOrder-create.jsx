@@ -8,6 +8,7 @@ import { authenticate } from "../shopify.server.js";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { json } from "@remix-run/react";
 import PurchaseOrder from "../models/purchase.js";
+import { generatePurchaseOrderPDF } from "../utils/pdfGenerator.js";
 
 export async function loader({ request }) {
   const { admin } = await authenticate.admin(request);
@@ -362,6 +363,7 @@ export default function AdditionalPage() {
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [orderId, setOrderId] = useState(null);
 
   const handleSave = useCallback(async () => {
     if (formData.products.length === 0) {
@@ -378,19 +380,22 @@ export default function AdditionalPage() {
     const subtotal = formData.products.reduce((sum, item) => {
       const qty = item.inventoryQuantity || item.quantity || 0;
       const cost = parseFloat(item.cost) || 0;
-      const taxPercent = parseFloat(item.tax) || 0;
+      const taxPercent = item.tax ? parseFloat(item.tax) : 0;
       const taxAmount = Number((cost * taxPercent) / 100);
       return sum + qty * (cost + taxAmount);
     }, 0);
-    const total =
-      subtotal + parseFloat(formData.cost.shipping.replace("$", "") || 0);
+    const rawShipping = formData.cost.shipping || "0";
+    const numericShipping = parseFloat(
+      rawShipping.replace(/[^\d.-]/g, "") || 0
+    );
+    const total = subtotal + numericShipping;
     // Prepare payload with updated product totals
     const payload = {
       ...formData,
       products: formData.products.map((product) => {
         const qty = product.inventoryQuantity || product.quantity || 0;
         const cost = parseFloat(product.cost) || 0;
-        const taxPercent = parseFloat(product.tax) || 0;
+        const taxPercent = Number(product.tax) || 0;
         const taxAmount = Number((cost * taxPercent) / 100);
         return {
           ...product,
@@ -400,8 +405,8 @@ export default function AdditionalPage() {
       }),
       cost: {
         ...formData.cost,
-        subtotal: `${formData.supplier?.supplierCurrency || "USD"} ${subtotal.toFixed(2)}`,
-        total: `${formData.supplier?.supplierCurrency || "USD"} ${total.toFixed(2)}`,
+        subtotal: `${formData.supplier?.supplierCurrency || 'USD'} ${subtotal.toFixed(2)}`,
+        total: `${formData.supplier?.supplierCurrency || 'USD'} ${total.toFixed(2)}`,
       },
     };
     try {
@@ -417,12 +422,15 @@ export default function AdditionalPage() {
         throw new Error(result.details || "Failed to save purchase order");
       }
       setSuccess(true);
+      setOrderId(result.orderId);
     } catch (error) {
       setError(error.message);
       navigate("/app");
     }
     navigate("/app");
   }, [formData]);
+
+
 
   // Helper to update form data
   const updateFormData = useCallback((path, value) => {
@@ -450,8 +458,7 @@ export default function AdditionalPage() {
   const updateProducts = useCallback((updater) => {
     setFormData((prev) => ({
       ...prev,
-      products:
-        typeof updater === "function" ? updater(prev.products) : prev.products,
+      products: typeof updater === "function" ? updater(prev.products) : prev.products,
     }));
   }, []);
   return (
@@ -470,6 +477,7 @@ export default function AdditionalPage() {
         </Button>
       }
     >
+
       <BlockStack gap={300}>
         {error && (
           <Banner tone="critical" title="Error">
