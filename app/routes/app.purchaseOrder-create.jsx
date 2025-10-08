@@ -388,7 +388,7 @@ export default function AdditionalPage() {
     const payload = {
       ...formData,
       products: formData.products.map((product) => {
-        const qty = product.inventoryQuantity|| product.quantity || 0;
+        const qty = product.inventoryQuantity || product.quantity || 0;
         const cost = parseFloat(product.cost) || 0;
         const taxPercent = parseFloat(product.tax) || 0;
         const taxAmount = Number((cost * taxPercent) / 100);
@@ -400,8 +400,8 @@ export default function AdditionalPage() {
       }),
       cost: {
         ...formData.cost,
-        subtotal: `$${subtotal.toFixed(2)}`,
-        total: `$${total.toFixed(2)}`,
+        subtotal: `${formData.supplier?.supplierCurrency || "USD"} ${subtotal.toFixed(2)}`,
+        total: `${formData.supplier?.supplierCurrency || "USD"} ${total.toFixed(2)}`,
       },
     };
     try {
@@ -423,8 +423,6 @@ export default function AdditionalPage() {
     }
     navigate("/app");
   }, [formData]);
-
-
 
   // Helper to update form data
   const updateFormData = useCallback((path, value) => {
@@ -452,7 +450,8 @@ export default function AdditionalPage() {
   const updateProducts = useCallback((updater) => {
     setFormData((prev) => ({
       ...prev,
-      products: typeof updater === "function" ? updater(prev.products) : prev.products,
+      products:
+        typeof updater === "function" ? updater(prev.products) : prev.products,
     }));
   }, []);
   return (
@@ -471,14 +470,13 @@ export default function AdditionalPage() {
         </Button>
       }
     >
-     
       <BlockStack gap={300}>
         {error && (
           <Banner tone="critical" title="Error">
             {error}
           </Banner>
         )}
-      
+
         <SupplierDestinationCard
           LocationAddress={LocationAddress}
           formattedOrders={formattedOrders}
