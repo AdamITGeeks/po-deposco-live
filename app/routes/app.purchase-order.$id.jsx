@@ -7,6 +7,7 @@ import SupplierDestinationCard from "./component/SupplierDestinationCard.jsx";
 import AddProductsSection from "./component/AddProductsSection.jsx";
 import ShipmentDetailsCard from "./component/ShipmentDetailsCards.jsx";
 import { authenticate } from "../shopify.server.js";
+import { generatePurchaseOrderPDF } from "../utils/pdfGenerator.js";
 
 // Loader fetches order by orderId
 export const loader = async ({ params, request }) => {
@@ -103,12 +104,23 @@ export const loader = async ({ params, request }) => {
     const uniqueCarrierOptions = Array.from(
       new Map(carrierOptions.map((c) => [c.value, c])).values(),
     );
-
+    const billingAddress = await admin.graphql(`
+       query MyQuery {
+          shop {
+          name
+    billingAddress {
+      formatted
+    }
+  }
+}	
+    `);
+    const billingAddressData = await billingAddress.json();
     return {
       order,
       currencies: uniqueCurrencies,
       carrierOptions: uniqueCarrierOptions,
       LocationAddress: LocationAddress?.data?.locations?.edges || [],
+      billingAddressData: billingAddressData?.data?.shop || [],
     };
   } catch (err) {
     throw new Response("Internal Server Error", { status: 500 });
@@ -118,8 +130,10 @@ export const loader = async ({ params, request }) => {
 export default function EditPurchaseOrderPage() {
   const navigate = useNavigate();
   const shopify = useAppBridge();
-  const { order, carrierOptions, LocationAddress } = useLoaderData();
+  const { order, carrierOptions, LocationAddress, billingAddressData } =
+    useLoaderData();
   const [orderStatus, setOrderStatus] = useState(order?.status || "Draft");
+  const [pdfButtonLoading, setPdfButtonLoading] = useState(false);
 
   const currencies = [
     { label: "US Dollar (USD $)", value: "USD" },
@@ -329,10 +343,30 @@ export default function EditPurchaseOrderPage() {
   }, []);
 
   const updateProducts = useCallback((updater) => {
-    setFormData((prev) => ({
-      ...prev,
-      products: updater(prev.products),
-    }));
+    setFormData((prev) => {
+      const newProducts =
+        typeof updater === "function" ? updater(prev.products) : prev.products;
+      // Recalculate subtotal and total
+      const subtotal = newProducts.reduce((sum, item) => {
+        const qty = parseFloat(item.inventoryQuantity || item.quantity) || 0;
+        const cost = parseFloat(item.cost) || 0;
+        const taxPercent = parseFloat(item.tax) || 0;
+        const taxAmount = (cost * taxPercent) / 100;
+        return sum + qty * (cost + taxAmount);
+      }, 0);
+      const shipping =
+        parseFloat(prev.cost.shipping?.replace(/[^0-9.-]+/g, "")) || 0;
+      const total = subtotal + shipping;
+      return {
+        ...prev,
+        products: newProducts,
+        cost: {
+          ...prev.cost,
+          subtotal: `${prev.supplier.supplierCurrency || "USD"} ${subtotal.toFixed(2)}`,
+          total: `${prev.supplier.supplierCurrency || "USD"} ${total.toFixed(2)}`,
+        },
+      };
+    });
   }, []);
 
   // Save updated order
@@ -507,6 +541,17 @@ export default function EditPurchaseOrderPage() {
       console.error("Unexpected error in webhook:", error.message);
     }
   };
+
+  const handleDownloadPDF = useCallback(async () => {
+    setPdfButtonLoading(true);
+    try {
+      const pdfDoc = await generatePurchaseOrderPDF(order, billingAddressData);
+      pdfDoc.save(`purchase_order_${order.orderNumber}.pdf`);
+    } catch (error) {
+      console.error(error);
+    }
+    setPdfButtonLoading(false);
+  }, [order]);
   return (
     <Page
       title={`Purchase Order - ${order.orderNumber}`}
@@ -528,22 +573,22 @@ export default function EditPurchaseOrderPage() {
               : "Draft"}
         </Badge>
       }
-      secondaryActions={
-        orderStatus !== "Ordered"
+      secondaryActions={[
+        {
+          content: "Download PDF",
+          onAction: handleDownloadPDF,
+          loading: pdfButtonLoading,
+        },
+        ...(orderStatus !== "Ordered"
           ? [
-              isEditing
-                ? {
-                    content: "Cancel",
-                    onAction: () => setIsEditing(false),
-                  }
-                : {
-                    content: "Mark as ordered",
-                    onAction: handlepayload,
-                    variant: "secondary",
-                  },
+              {
+                content: "Mark as ordered",
+                onAction: handlepayload,
+                variant: "secondary",
+              },
             ]
-          : undefined
-      }
+          : []),
+      ]}
       primaryAction={
         orderStatus !== "Ordered" ? (
           isEditing ? (
@@ -583,11 +628,15 @@ export default function EditPurchaseOrderPage() {
           onUpdate={(value) => updateFormData("shipment", value)}
           disabled={!isEditing}
         />
-
         {/* Products Section */}
         <AddProductsSection
+          currencies={currencies}
           isEditing={isEditing}
           shopify={shopify}
+          supperCurrency={
+            formData.supplier.supplierCurrency ||
+            order?.supplier?.supplierCurrency
+          }
           products={formData.products}
           onProductsUpdate={updateProducts}
           additional={formData.additional}

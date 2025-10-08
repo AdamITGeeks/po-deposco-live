@@ -33,8 +33,8 @@ const PurchaseOrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["draft", "ordered"],
-      default: "draft",
+      enum: ["Draft", "Ordered"],
+      default: "Draft",
     },
     shipment: {
       estimatedArrival: String,

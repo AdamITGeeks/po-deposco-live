@@ -16,7 +16,7 @@ import {
   Modal,
   FormLayout,
 } from "@shopify/polaris";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ImageIcon, XIcon } from "@shopify/polaris-icons";
 
 export default function AddProductsSection({
@@ -28,7 +28,22 @@ export default function AddProductsSection({
   cost,
   onCostUpdate,
   isEditing = true,
+  supperCurrency,
+  currencies
 }) {
+  let currencySymbol = '';
+console.log(cost, "costttttt");
+  // Find the symbol from the label using RegEx
+  const matchedCurrency = currencies?.find(c => c.value === supperCurrency);
+  if (matchedCurrency) {
+    // Extract symbol using regex from the label
+    const match = matchedCurrency.label.match(/\((.*?)\)/);
+    if (match && match[1]) {
+      // Take the last part after space (e.g. "VND ₫" => "₫")
+      const parts = match[1].split(' ');
+      currencySymbol = parts[parts.length - 1];
+    }
+  }
   const [selectedProducts, setSelectedProducts] = useState(products);
   const [searchValue, setSearchValue] = useState("");
   const [referenceNumber, setReferenceNumber] = useState(
@@ -38,11 +53,12 @@ export default function AddProductsSection({
     additional.noteToSupplier,
   );
   const [tag, setTag] = useState(additional.tag);
-  const [shipping, setShipping] = useState(cost.shipping);
-  const [modalActive, setModalActive] = useState(false);
-  const [tempShipping, setTempShipping] = useState(
-    cost.shipping ? parseFloat(cost.shipping.replace("$", "")) : shipping,
+  const [shipping, setShipping] = useState(
+    cost.shipping ? parseFloat(cost.shipping.replace(supperCurrency, "")) || 0 : 0
   );
+  const [modalActive, setModalActive] = useState(false);
+  const [tempShipping, setTempShipping] = useState(shipping);
+
   const handleTextFieldChange = useCallback(
     (value) => {
       setNoteToSupplier(value);
@@ -51,17 +67,17 @@ export default function AddProductsSection({
     [additional, onAdditionalUpdate],
   );
 
-  const handleSelection = useCallback(
+ const handleSelection = useCallback(
     ({ selection }) => {
       const newItems = selection.flatMap((product) => {
         const productImage =
           product.images && product.images.length > 0
             ? {
-                originalSrc: product.images[0].originalSrc,
-                altText: product.images[0].altText || product.title,
-              }
+              originalSrc: product.images[0].originalSrc,
+              altText: product.images[0].altText || product.title,
+            }
             : null;
-
+ 
         if (product.variants && product.variants.length > 0) {
           return product.variants.map((variant) => {
             const variantValue =
@@ -71,7 +87,7 @@ export default function AddProductsSection({
             const displayName = variantValue
               ? `${product.title} - ${variantValue}`
               : product.title;
-
+ 
             return {
               ...variant,
               title: product.title,
@@ -99,7 +115,7 @@ export default function AddProductsSection({
           ];
         }
       });
-
+ 
       const mongoVariants = selectedProducts.flatMap((product) => {
         if (product.variants) {
           return product.variants.map((variant) => ({
@@ -115,9 +131,9 @@ export default function AddProductsSection({
         }
         return [];
       });
-
+ 
       const combinedItems = [...newItems, ...mongoVariants];
-
+ 
       setSelectedProducts((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
         const newUniqueItems = combinedItems.filter(
@@ -125,7 +141,7 @@ export default function AddProductsSection({
         );
         return [...prev, ...newUniqueItems];
       });
-
+ 
       onProductsUpdate((prev) => {
         const existingIds = new Set(prev.map((item) => item.id));
         const newUniqueItems = combinedItems.filter(
@@ -139,6 +155,7 @@ export default function AddProductsSection({
 
   const updateVariantField = useCallback(
     (id, field, value) => {
+      console.log(value, "valueeeeee");
       setSelectedProducts((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, [field]: value } : item,
@@ -190,16 +207,21 @@ export default function AddProductsSection({
     },
     [onProductsUpdate],
   );
-
+useEffect(() => {
+  const merged = [...selectedProducts];
+  setSelectedProducts(merged);
+  onProductsUpdate(merged);
+}, []); 
   const calculateSubtotal = useCallback(() => {
     return selectedProducts.reduce((sum, item) => {
-      const qty = parseFloat(item.inventoryQuantity || item.quantity) || 0;
+      const qty = parseFloat(item.inventoryQuantity ?? item.quantity) || 0;
       const cost = parseFloat(item.cost) || 0;
       const taxPercent = parseFloat(item.tax) || 0;
-      const taxAmount = (cost * taxPercent) / 100;
+      const taxAmount = Number((cost * taxPercent) / 100);
       return sum + qty * (cost + taxAmount);
     }, 0);
   }, [selectedProducts]);
+ 
   const handleReferenceChange = useCallback(
     (value) => {
       setReferenceNumber(value);
@@ -220,7 +242,7 @@ export default function AddProductsSection({
   const handleSave = () => {
     const numValue = parseFloat(tempShipping) || 0;
     setShipping(numValue);
-    onCostUpdate({ ...cost, shipping: `$${numValue.toFixed(2)}` });
+    onCostUpdate({ ...cost, shipping: `${supperCurrency} ${numValue.toFixed(2)}` });
     setModalActive(false);
   };
 
@@ -307,9 +329,10 @@ export default function AddProductsSection({
                   resourceName={{ singular: "product", plural: "products" }}
                   items={selectedProducts}
                   renderItem={(item) => {
+                    console.log("Item in list:", item);
                     const { id, title, displayName } = item;
                     const qty =
-                      parseFloat(item.inventoryQuantity || item.quantity) || 0;
+                      parseFloat(item.inventoryQuantity ?? item.quantity) || 0;
                     const cost = parseFloat(item.cost) || 0;
                     const taxPercent = parseFloat(item.tax) || 0;
                     const taxAmount = (cost * taxPercent) / 100;
@@ -348,17 +371,18 @@ export default function AddProductsSection({
                                   disabled={isEditing === false}
                                   type="number"
                                   value={
-                                    item.inventoryQuantity ||
-                                    item.quantity ||
+                                    item?.inventoryQuantity ??
+                                    item?.quantity ??
                                     ""
                                   }
-                                  onChange={(value) =>
+                                  onChange={(value) => {
                                     updateVariantField(
                                       id,
                                       "inventoryQuantity",
-                                      parseFloat(value) || 0,
-                                    )
-                                  }
+                                      value === "" ? "" : parseFloat(value)
+                                    );
+                                  }}
+
                                   labelHidden
                                   label="quantity"
                                 />
@@ -375,7 +399,7 @@ export default function AddProductsSection({
                                   }
                                   labelHidden
                                   label="Cost"
-                                  prefix="$"
+                                  prefix={currencySymbol}
                                 />
                               </Box>
                             </BlockStack>
@@ -399,7 +423,11 @@ export default function AddProductsSection({
                               align="end"
                               gap="100"
                             >
-                              <Text>${itemTotal}</Text>
+                              <InlineStack align="center" gap="0">
+
+                                <Text>{`${currencySymbol} `}</Text>
+                                <Text> {itemTotal} {currencySymbol == supperCurrency ? "" : `${supperCurrency}`}</Text>
+                              </InlineStack>
                               <Button
                                 disabled={isEditing === false}
                                 size="micro"
@@ -468,7 +496,7 @@ export default function AddProductsSection({
                 Cost summary
               </Text>
               <Box>
-                <Button variant="plain" onClick={() => setModalActive(true)}>
+                <Button variant="plain" onClick={() => { setTempShipping(shipping); setModalActive(true); }}>
                   Manage
                 </Button>
               </Box>
@@ -477,16 +505,23 @@ export default function AddProductsSection({
               <InlineStack align="space-between" blockAlign="center">
                 <Text variant="bodyMd">Shipping</Text>
                 <Text>
-                  {typeof shipping === "string"
-                    ? shipping
-                    : `$${parseFloat(shipping || 0).toFixed(2)}`}
+                  {`${currencySymbol} `}
+                  {shipping.toFixed(2)}
+                  {` ${currencySymbol !== supperCurrency ? supperCurrency : ""}`}
                 </Text>
               </InlineStack>
               <InlineStack align="space-between" blockAlign="center">
                 <Text variant="bodyMd" fontWeight="bold">
                   Subtotal
                 </Text>
-                <Text>${calculateSubtotal().toFixed(2)}</Text>
+                <Text as="span">
+                  <InlineStack align="center" gap="0">
+                    <Text>{`${currencySymbol} `}</Text>
+                    <Text>
+                      {calculateSubtotal().toFixed(2)} {currencySymbol !== supperCurrency ? `${supperCurrency} ` : ""}
+                    </Text>
+                  </InlineStack>
+                </Text>
               </InlineStack>
               <InlineStack align="space-between" blockAlign="center">
                 <Text variant="bodyMd">{selectedProducts.length} items</Text>
@@ -497,9 +532,10 @@ export default function AddProductsSection({
                 Total
               </Text>{" "}
               <Text fontWeight="bold">
-                {!cost.total === "$0.00"
+                {`${currencySymbol} `}
+                {!cost.total === `${supperCurrency}0.00`
                   ? cost.total
-                  : `$${(calculateSubtotal() + (parseFloat(shipping) || 0)).toFixed(2)}`}
+                  : (calculateSubtotal() + shipping).toFixed(2)} {currencySymbol !== supperCurrency ? supperCurrency : ""}
               </Text>
             </InlineStack>
           </BlockStack>
@@ -543,7 +579,7 @@ export default function AddProductsSection({
                   type="number"
                   value={tempShipping}
                   onChange={setTempShipping}
-                  prefix="$"
+                  prefix={supperCurrency}
                   width="100px"
                 />
               </InlineStack>

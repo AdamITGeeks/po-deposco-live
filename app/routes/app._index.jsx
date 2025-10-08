@@ -13,10 +13,9 @@ import {
   Icon,
   EmptyState,
 } from "@shopify/polaris";
-import { OrderIcon } from "@shopify/polaris-icons";
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import orderStatus from "./app.purchase-order.$id";
+import { TitleBar } from "@shopify/app-bridge-react";
 
 function OrderManagement() {
   const navigate = useNavigate();
@@ -41,7 +40,11 @@ function OrderManagement() {
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
+            data.data.map((order)=>{
+ console.log(order.cost,"costttt")
+            })
             const transformedOrders = data.data.map((order) => ({
+             
               id: order.orderId,
               orderNumber: order.orderNumber,
               supplier: order.supplier?.address?.company || "Unknown Supplier",
@@ -54,6 +57,7 @@ function OrderManagement() {
                 ? new Date(order.shipment.estimatedArrival).toLocaleDateString()
                 : "N/A",
             }));
+            console.log(transformedOrders, "transformedOrders");
             setOrders(transformedOrders);
           } else {
             setError(data.error || "Failed to fetch orders");
@@ -126,7 +130,7 @@ function OrderManagement() {
   const handleRowClick = useCallback(
     (id) => {
       navigate(`/app/purchase-order/${id}`, {
-        state: { order: orders.find((o) => o.id === id) },
+        state: { order: orders?.find((o) => o.id === id) },
       });
     },
     [navigate, orders],
@@ -220,28 +224,17 @@ function OrderManagement() {
 
       {/* Main Page */}
       {!loading && !error && orders && orders.length > 0 && (
-        <Page
-          fullWidth
-          title={
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <Icon source={OrderIcon} />
-              <Text variant="headingLg" as="h5">
-                Purchase Orders
-              </Text>
-            </div>
-          }
-          primaryAction={
-            <Button
-              loading={loading}
+        <Page fullWidth>
+          <TitleBar title=" Purchase Orders">
+            <button
               variant="primary"
               onClick={() => {
                 (navigate("/app/purchaseOrder-create"), setLoading(true));
               }}
             >
               Create purchase order
-            </Button>
-          }
-        >
+            </button>
+          </TitleBar>
           <LegacyCard>
             <Box paddingBlockEnd="400">
               <IndexFilters
@@ -260,6 +253,7 @@ function OrderManagement() {
                 filters={[]}
               />
               <IndexTable
+                selectable={false}
                 condensed={condensed}
                 resourceName={{
                   singular: "purchase order",

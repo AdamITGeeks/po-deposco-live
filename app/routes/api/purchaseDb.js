@@ -26,7 +26,7 @@ export async function action({ request }) {
 
     // Prepare products array
     const products = data.products.map((product) => {
-      const qty = parseFloat(product.inventoryQuantity) || 0;
+      const qty = parseFloat(product.inventoryQuantity || product.quantity) || 0;
       const cost = parseFloat(product.cost) || 0;
       const taxPercent = parseFloat(product.tax) || 0;
       const taxAmount = (cost * taxPercent) / 100;
@@ -34,7 +34,7 @@ export async function action({ request }) {
       return {
         id: product.id || "",
         title: product.displayName || product.title || "",
-        quantity: qty,
+        quantity: qty || product.inventoryQuantity,
         price: cost,
         sku: product.sku || "",
         total: total,

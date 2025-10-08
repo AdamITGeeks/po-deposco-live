@@ -376,10 +376,10 @@ export default function AdditionalPage() {
 
     // Calculate subtotal and total for cost object
     const subtotal = formData.products.reduce((sum, item) => {
-      const qty = parseFloat(item.inventoryQuantity) || 0;
+      const qty = item.inventoryQuantity || item.quantity || 0;
       const cost = parseFloat(item.cost) || 0;
       const taxPercent = parseFloat(item.tax) || 0;
-      const taxAmount = (cost * taxPercent) / 100;
+      const taxAmount = Number((cost * taxPercent) / 100);
       return sum + qty * (cost + taxAmount);
     }, 0);
     const total =
@@ -388,10 +388,10 @@ export default function AdditionalPage() {
     const payload = {
       ...formData,
       products: formData.products.map((product) => {
-        const qty = parseFloat(product.inventoryQuantity) || 0;
+        const qty = product.inventoryQuantity|| product.quantity || 0;
         const cost = parseFloat(product.cost) || 0;
         const taxPercent = parseFloat(product.tax) || 0;
-        const taxAmount = (cost * taxPercent) / 100;
+        const taxAmount = Number((cost * taxPercent) / 100);
         return {
           ...product,
           quantity: qty,
@@ -424,13 +424,15 @@ export default function AdditionalPage() {
     navigate("/app");
   }, [formData]);
 
+
+
   // Helper to update form data
   const updateFormData = useCallback((path, value) => {
     setFormData((prev) => {
       const newData = { ...prev };
 
       if (!path.includes(".")) {
-        newData[path] = value; 
+        newData[path] = value;
         return newData;
       }
 
@@ -450,10 +452,9 @@ export default function AdditionalPage() {
   const updateProducts = useCallback((updater) => {
     setFormData((prev) => ({
       ...prev,
-      products: updater(prev.products),
+      products: typeof updater === "function" ? updater(prev.products) : prev.products,
     }));
   }, []);
-
   return (
     <Page
       backAction={{ url: "/app" }}
@@ -470,17 +471,14 @@ export default function AdditionalPage() {
         </Button>
       }
     >
+     
       <BlockStack gap={300}>
         {error && (
           <Banner tone="critical" title="Error">
             {error}
           </Banner>
         )}
-        {success && (
-          <Banner tone="success" title="Success">
-            Purchase order saved successfully!
-          </Banner>
-        )}
+      
         <SupplierDestinationCard
           LocationAddress={LocationAddress}
           formattedOrders={formattedOrders}
@@ -501,6 +499,7 @@ export default function AdditionalPage() {
           onUpdate={(value) => updateFormData("shipment", value)}
         />
         <AddProductsSection
+          supperCurrency={formData.supplier.supplierCurrency}
           shopify={shopify}
           products={formData.products}
           onProductsUpdate={updateProducts}
