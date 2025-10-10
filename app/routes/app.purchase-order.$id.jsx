@@ -386,6 +386,7 @@ export default function EditPurchaseOrderPage() {
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.details || "Failed to update order");
+      window.location.reload();
 
       setSuccess(true);
       setTimeout(() => {

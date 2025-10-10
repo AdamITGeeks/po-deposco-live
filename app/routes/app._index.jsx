@@ -41,7 +41,6 @@ function OrderManagement() {
         .then((data) => {
           if (data.success) {
             data.data.map((order)=>{
- console.log(order.cost,"costttt")
             })
             const transformedOrders = data.data.map((order) => ({
              

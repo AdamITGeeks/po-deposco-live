@@ -1,4 +1,3 @@
-
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -6,7 +5,6 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
   const pdf = new jsPDF("p", "mm", "a4");
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
-
   const company = billingAddressData?.name;
   const supplier = orderData.supplier.address || {};
   const destination = orderData.destination?.address || { formatted: [] };
@@ -21,8 +19,7 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
     }, 0)
     .toFixed(2);
 
-  const currencySymbol =
-    orderData.supplier.supplierCurrency === "GBP" ? "£" : "$";
+  const currencySymbol = orderData?.supplier?.supplierCurrency || "USD";
   const billTo = {
     address: billingAddressData?.billingAddress?.formatted,
   };
@@ -32,8 +29,6 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
     <div style="font-family: Arial, sans-serif; width: 794px; background: white; padding: 0;">
       <!-- Header Section -->
       <div style="padding: 20px 30px;">
-        <p style="margin-bottom: 20px; font-size: 14px;">${company}</p>
-
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <h2 style="font-size: 18px; font-weight: bold;">${company}</h2>
           <div style="text-align: right;">
@@ -45,7 +40,7 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
         <div style="display: flex; justify-content: space-between; margin-top: 25px; gap: 30px;">
           <div style="flex: 1;">
             <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">SUPPLIER</p>
-            <p style="font-size: 14px; margin: 2px 0;">${company || "it gekss"}</p>
+            <p style="font-size: 14px; margin: 2px 0;">${supplier.company || " "}</p>
             <p style="font-size: 14px; margin: 2px 0;">${supplier.street || "1224 Burke Street"}</p>
             <p style="font-size: 14px; margin: 2px 0;">${supplier.city || "Hanahan"} ${supplier.state || "SC"} ${supplier.zipCode || "29410"}</p>
             <p style="font-size: 14px; margin: 2px 0;">${supplier.country || "United States"}</p>
@@ -82,7 +77,7 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
         <div style="display: flex; justify-content: space-between; margin-top: 25px;">
           <div>
             <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">SUPPLIER CURRENCY</p>
-            <p style="font-size: 14px;">${orderData.supplier.supplierCurrency || "GBP"}</p>
+            <p style="font-size: 14px;">${currencySymbol}</p>
           </div>
           <div>
             <p style="font-size: 14px; font-weight: bold; margin-bottom: 5px;">ESTIMATED ARRIVAL</p>
@@ -179,13 +174,6 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
         <div style="margin-top: 25px;">
           <p style="font-size: 14px; font-weight: bold; margin-bottom: 8px;">NOTES TO SUPPLIER</p>
           <p style="font-size: 14px; line-height: 1.4;">${orderData.additional?.noteToSupplier || "-"}</p>
-        </div>
-
-        <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #000;">
-          <p style="font-size: 14px; margin: 4px 0;"><strong>${company}</strong></p>
-          <p style="font-size: 14px; margin: 4px 0;">rcambias@fireequipmentdirect.com</p>
-          <p style="font-size: 14px; margin: 4px 0;">https://fireequipmentdirect.com</p>
-          <p style="font-size: 14px; margin: 4px 0;">PO Box 578</p>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 60px;">

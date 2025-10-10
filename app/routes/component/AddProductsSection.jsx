@@ -32,7 +32,6 @@ export default function AddProductsSection({
   currencies
 }) {
   let currencySymbol = '';
-console.log(cost, "costttttt");
   // Find the symbol from the label using RegEx
   const matchedCurrency = currencies?.find(c => c.value === supperCurrency);
   if (matchedCurrency) {
@@ -155,7 +154,6 @@ console.log(cost, "costttttt");
 
   const updateVariantField = useCallback(
     (id, field, value) => {
-      console.log(value, "valueeeeee");
       setSelectedProducts((prev) =>
         prev.map((item) =>
           item.id === id ? { ...item, [field]: value } : item,
@@ -329,7 +327,6 @@ useEffect(() => {
                   resourceName={{ singular: "product", plural: "products" }}
                   items={selectedProducts}
                   renderItem={(item) => {
-                    console.log("Item in list:", item);
                     const { id, title, displayName } = item;
                     const qty =
                       parseFloat(item.inventoryQuantity ?? item.quantity) || 0;
