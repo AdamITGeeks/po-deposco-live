@@ -96,7 +96,7 @@ export async function generatePurchaseOrderPDF(orderData, billingAddressData) {
               <th style="padding: 12px 8px; font-size: 14px; text-align: center; font-weight: bold;">QTY</th>
               <th style="padding: 12px 8px; font-size: 14px; text-align: right; font-weight: bold;">COST</th>
               <th style="padding: 12px 8px; font-size: 14px; text-align: center; font-weight: bold;">TAX</th>
-              <th style="padding: 12px 8px; font-size: 14px; text-align: right; font-weight: bold;">TOTAL (${orderData.supplier.supplierCurrency || "GBP"})</th>
+              <th style="padding: 12px 8px; font-size: 14px; text-align: right; font-weight: bold;">TOTAL (${currencySymbol|| "USD"})</th>
             </tr>
           </thead>
           <tbody>
